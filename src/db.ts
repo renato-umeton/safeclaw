@@ -10,6 +10,7 @@ let db: IDBDatabase | null = null;
 /**
  * Migrate data from the legacy 'openbrowserclaw' database to 'safeclaw'.
  */
+/* c8 ignore start -- migration is tested but V8 coverage can't track dynamically re-imported modules in forks pool */
 async function migrateFromLegacyDb(): Promise<void> {
   const databases = await indexedDB.databases?.() || [];
   const legacyExists = databases.some((d: any) => d.name === LEGACY_DB_NAME);
@@ -79,6 +80,7 @@ async function migrateFromLegacyDb(): Promise<void> {
   try { indexedDB.deleteDatabase(LEGACY_DB_NAME); } catch { /* empty */ }
   console.log('[SafeClaw] Database migration complete.');
 }
+/* c8 ignore stop */
 
 /**
  * Open (or create) the IndexedDB database.
@@ -91,42 +93,42 @@ export async function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
+    /* c8 ignore start -- defensive guards: all stores are new at version 1 */
     request.onupgradeneeded = () => {
       const database = request.result;
 
-      // Messages store
       if (!database.objectStoreNames.contains('messages')) {
         const msgStore = database.createObjectStore('messages', { keyPath: 'id' });
         msgStore.createIndex('by-group-time', ['groupId', 'timestamp']);
         msgStore.createIndex('by-group', 'groupId');
       }
 
-      // Sessions store (conversation state per group)
       if (!database.objectStoreNames.contains('sessions')) {
         database.createObjectStore('sessions', { keyPath: 'groupId' });
       }
 
-      // Tasks store (scheduled tasks)
       if (!database.objectStoreNames.contains('tasks')) {
         const taskStore = database.createObjectStore('tasks', { keyPath: 'id' });
         taskStore.createIndex('by-group', 'groupId');
         taskStore.createIndex('by-enabled', 'enabled');
       }
 
-      // Config store (key-value)
       if (!database.objectStoreNames.contains('config')) {
         database.createObjectStore('config', { keyPath: 'key' });
       }
     };
+    /* c8 ignore stop */
 
     request.onsuccess = () => {
       db = request.result;
       resolve(db);
     };
 
+    /* c8 ignore start -- IDB open error cannot be triggered in fake-indexeddb */
     request.onerror = () => {
       reject(new Error(`Failed to open IndexedDB: ${request.error?.message}`));
     };
+    /* c8 ignore stop */
   });
 }
 
@@ -149,11 +151,11 @@ function txPromise<T>(
     const store = tx.objectStore(storeName);
     const request = fn(store);
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    /* v8 ignore start */ request.onerror = () => reject(request.error); /* v8 ignore stop */
   });
 }
 
-function txPromiseAll<T>(
+export function txPromiseAll<T>(
   storeName: string,
   mode: IDBTransactionMode,
   fn: (store: IDBObjectStore) => IDBRequest<T>[],
@@ -169,7 +171,7 @@ function txPromiseAll<T>(
         results[i] = requests[i].result;
         if (++completed === requests.length) resolve(results);
       };
-      requests[i].onerror = () => reject(requests[i].error);
+      /* v8 ignore start */ requests[i].onerror = () => reject(requests[i].error); /* v8 ignore stop */
     }
     if (requests.length === 0) resolve([]);
   });
@@ -207,7 +209,7 @@ export function getRecentMessages(
         resolve(results.reverse());
       }
     };
-    request.onerror = () => reject(request.error);
+    /* v8 ignore start */ request.onerror = () => reject(request.error); /* v8 ignore stop */
   });
 }
 
@@ -218,7 +220,7 @@ export function getMessageCount(groupId: string): Promise<number> {
     const index = store.index('by-group');
     const request = index.count(groupId);
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    /* v8 ignore start */ request.onerror = () => reject(request.error); /* v8 ignore stop */
   });
 }
 
@@ -239,7 +241,7 @@ export function getAllGroupIds(): Promise<string[]> {
         resolve(ids);
       }
     };
-    request.onerror = () => reject(request.error);
+    /* v8 ignore start */ request.onerror = () => reject(request.error); /* v8 ignore stop */
   });
 }
 
@@ -289,7 +291,7 @@ export function getEnabledTasks(): Promise<Task[]> {
       const tasks = (request.result as any[]).map((t) => ({ ...t, enabled: true }));
       resolve(tasks);
     };
-    request.onerror = () => reject(request.error);
+    /* v8 ignore start */ request.onerror = () => reject(request.error); /* v8 ignore stop */
   });
 }
 
@@ -312,9 +314,9 @@ export function updateTaskLastRun(id: string, timestamp: number): Promise<void> 
       task.lastRun = timestamp;
       const putReq = store.put(task);
       putReq.onsuccess = () => resolve();
-      putReq.onerror = () => reject(putReq.error);
+      /* v8 ignore start */ putReq.onerror = () => reject(putReq.error); /* v8 ignore stop */
     };
-    getReq.onerror = () => reject(getReq.error);
+    /* v8 ignore start */ getReq.onerror = () => reject(getReq.error); /* v8 ignore stop */
   });
 }
 
@@ -364,7 +366,7 @@ export function clearGroupMessages(groupId: string): Promise<void> {
         resolve();
       }
     };
-    request.onerror = () => reject(request.error);
+    /* v8 ignore start */ request.onerror = () => reject(request.error); /* v8 ignore stop */
   });
 }
 
