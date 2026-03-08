@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeClaw — Browser-Native Personal AI Assistant</title>
+  <meta name="description" content="SafeClaw is a browser-native personal AI assistant with multi-provider LLM support. Runs entirely in your browser tab — no server, no tracking, full privacy." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>" />
+  <style>
+    :root {
+      --bg-primary: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --bg-card: #16213e;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0b0;
+      --accent: #6c63ff;
+      --accent-hover: #8b83ff;
+      --accent-glow: rgba(108, 99, 255, 0.3);
+      --green: #4ade80;
+      --blue: #60a5fa;
+      --orange: #fb923c;
+      --pink: #f472b6;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+
+    /* ---- Nav ---- */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(15, 15, 26, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(108, 99, 255, 0.15);
+      padding: 0 2rem;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--text-secondary); font-size: 0.95rem; }
+    .nav-links a:hover { color: var(--text-primary); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 0 20px var(--accent-glow);
+      color: #fff;
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ---- Hero ---- */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 50% 30%, var(--accent-glow) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 99px;
+      background: rgba(108, 99, 255, 0.1);
+      border: 1px solid rgba(108, 99, 255, 0.25);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent), var(--blue), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      position: relative;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ---- Sections ---- */
+    section {
+      padding: 5rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .section-header h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .section-header p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ---- Providers ---- */
+    .providers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+    .provider-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .provider-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .provider-card .icon {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    .provider-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+    }
+    .provider-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .provider-card .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      margin-top: 0.75rem;
+    }
+    .tag-cloud {
+      background: rgba(96, 165, 250, 0.15);
+      color: var(--blue);
+    }
+    .tag-local {
+      background: rgba(74, 222, 128, 0.15);
+      color: var(--green);
+    }
+
+    /* ---- Features ---- */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .feature-card .icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .feature-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* ---- Tools ---- */
+    .tools-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .tool-item {
+      background: var(--bg-secondary);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.9rem;
+    }
+    .tool-item .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* ---- Architecture ---- */
+    .arch-diagram {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+    .arch-diagram .layer {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      margin: 0.5rem auto;
+      max-width: 500px;
+      font-weight: 600;
+    }
+    .arch-l1 { background: rgba(108, 99, 255, 0.15); color: var(--accent); }
+    .arch-l2 { background: rgba(96, 165, 250, 0.15); color: var(--blue); }
+    .arch-l3 { background: rgba(251, 146, 60, 0.15); color: var(--orange); }
+    .arch-l4 { background: rgba(244, 114, 182, 0.15); color: var(--pink); }
+    .arch-l5 { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+    .arch-arrow { color: rgba(255,255,255,0.2); font-size: 1.2rem; }
+
+    /* ---- How It Works ---- */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .step h4 { font-size: 1rem; margin-bottom: 0.25rem; }
+    .step p { color: var(--text-secondary); font-size: 0.9rem; }
+
+    /* ---- Routing ---- */
+    .routing-table {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      overflow: hidden;
+      width: 100%;
+    }
+    .routing-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .routing-table th {
+      background: rgba(108, 99, 255, 0.1);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .routing-table td {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    /* ---- Footer ---- */
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    footer .attribution {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      section { padding: 3rem 1rem; }
+      .hero { padding: 5rem 1rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-logo">🛡️ SafeClaw</div>
+      <div class="nav-links">
+        <a href="#providers">Providers</a>
+        <a href="#features">Features</a>
+        <a href="#tools">Tools</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="https://github.com/renato-umeton/safeclaw" class="btn btn-outline">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">🔒 100% Browser-Native — No Server Required</div>
+    <h1>
+      <span class="gradient">Browser-Native</span><br />
+      Personal AI Assistant
+    </h1>
+    <p>
+      SafeClaw runs entirely in your browser tab — multiple LLM providers, built-in tools,
+      encrypted storage, and offline-capable local models. No server, no tracking, full privacy.
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/renato-umeton/safeclaw" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#providers" class="btn btn-outline">Explore Providers ↓</a>
+    </div>
+  </section>
+
+  <!-- Providers -->
+  <section id="providers">
+    <div class="section-header">
+      <h2>Multi-Provider LLM Support</h2>
+      <p>Choose the best model for your needs. Cloud for quality, local for privacy and offline use. Quality-first routing picks the right provider automatically.</p>
+    </div>
+    <div class="providers-grid">
+      <div class="provider-card">
+        <div class="icon">🟣</div>
+        <h3>Anthropic Claude</h3>
+        <p>Claude Opus 4, Sonnet 4, and Haiku — industry-leading reasoning with extended thinking and tool use.</p>
+        <span class="tag tag-cloud">Cloud</span>
+      </div>
+      <div class="provider-card">
+        <div class="icon">🔵</div>
+        <h3>Google Gemini</h3>
+        <p>Gemini 2.5 Pro and 2.0 Flash via the Gemini API — fast, capable, with native function calling.</p>
+        <span class="tag tag-cloud">Cloud</span>
+      </div>
+      <div class="provider-card">
+        <div class="icon">🟢</div>
+        <h3>WebLLM (Local)</h3>
+        <p>Run Qwen3 models locally via WebGPU. No data leaves your device. Works fully offline.</p>
+        <span class="tag tag-local">Local — WebGPU</span>
+      </div>
+      <div class="provider-card">
+        <div class="icon">🌐</div>
+        <h3>Chrome Gemini Nano</h3>
+        <p>Chrome's built-in AI model. Zero download, instant availability for summarization tasks.</p>
+        <span class="tag tag-local">Local — Built-in</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="section-header">
+      <h2>Built for Privacy & Power</h2>
+      <p>Everything runs in a single browser tab. Your data never touches a server you don't control.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="icon">🔒</div>
+        <h3>Privacy First</h3>
+        <p>No backend, no telemetry, no tracking. API keys are encrypted with AES-256-GCM using non-extractable Web Crypto keys stored in IndexedDB.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📱</div>
+        <h3>PWA — Install Anywhere</h3>
+        <p>Install as a Progressive Web App on any device. Works on desktop, tablet, and mobile. Feels native.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🧠</div>
+        <h3>Agentic Tool Use</h3>
+        <p>The AI can read/write files, run code, fetch URLs, manage tasks, and update its own memory — autonomously chaining tools to complete complex requests.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">✈️</div>
+        <h3>Offline Capable</h3>
+        <p>With WebLLM local models, SafeClaw works without an internet connection. Quality-first routing automatically falls back to local when offline.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔄</div>
+        <h3>Smart Routing</h3>
+        <p>Quality-first provider selection: cloud by default for best results, automatic fallback to local models when offline or rate-limited.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">💾</div>
+        <h3>Persistent Memory</h3>
+        <p>Conversations, files, and tasks persist in IndexedDB and OPFS. Your assistant remembers context across sessions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tools -->
+  <section id="tools">
+    <div class="section-header">
+      <h2>Built-in Tools</h2>
+      <p>Eight tools the AI can chain together autonomously to accomplish complex tasks.</p>
+    </div>
+    <div class="tools-list">
+      <div class="tool-item"><span class="dot"></span> bash</div>
+      <div class="tool-item"><span class="dot"></span> read_file</div>
+      <div class="tool-item"><span class="dot"></span> write_file</div>
+      <div class="tool-item"><span class="dot"></span> list_files</div>
+      <div class="tool-item"><span class="dot"></span> fetch_url</div>
+      <div class="tool-item"><span class="dot"></span> update_memory</div>
+      <div class="tool-item"><span class="dot"></span> create_task</div>
+      <div class="tool-item"><span class="dot"></span> javascript</div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section id="architecture">
+    <div class="section-header">
+      <h2>Clean, Layered Architecture</h2>
+      <p>No magic, no hidden complexity. A transparent pipeline from message to response.</p>
+    </div>
+    <div class="arch-diagram">
+      <div class="layer arch-l1">React UI — Chat, Settings, Thinking Log</div>
+      <div class="arch-arrow">↕</div>
+      <div class="layer arch-l2">Zustand Store — Reactive State Bridge</div>
+      <div class="arch-arrow">↕</div>
+      <div class="layer arch-l3">Orchestrator — Session, Memory, Provider Routing</div>
+      <div class="arch-arrow">↕</div>
+      <div class="layer arch-l4">Web Worker — Agentic Tool-Use Loop</div>
+      <div class="arch-arrow">↕</div>
+      <div class="layer arch-l5">Provider Layer — Anthropic · Gemini · WebLLM · Chrome AI</div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works">
+    <div class="section-header">
+      <h2>How It Works</h2>
+      <p>From message to response in six steps — all within your browser.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h4>You Send a Message</h4>
+          <p>Your message is captured by the React UI and dispatched to the orchestrator.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h4>Provider Selection</h4>
+          <p>The router selects the best provider based on availability, your preference, and network status.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h4>Context Assembly</h4>
+          <p>The orchestrator builds the prompt with system instructions, conversation history, memory, and tool definitions.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <h4>Worker Invocation</h4>
+          <p>The payload is sent to a dedicated Web Worker that runs the LLM call off the main thread.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div>
+          <h4>Agentic Tool Loop</h4>
+          <p>If the model requests tool use, the worker executes tools and re-invokes the model — up to 25 iterations.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div>
+          <h4>Response Delivered</h4>
+          <p>The final response is posted back to the main thread, stored in IndexedDB, and rendered in the chat.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Routing -->
+  <section>
+    <div class="section-header">
+      <h2>Quality-First Routing</h2>
+      <p>SafeClaw defaults to cloud models for best quality, and gracefully falls back when needed.</p>
+    </div>
+    <div class="routing-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Condition</th>
+            <th>Provider Selected</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>User explicitly selects a provider</td>
+            <td>User's choice (any provider)</td>
+          </tr>
+          <tr>
+            <td>Local preference set to "always"</td>
+            <td>WebLLM or Chrome AI</td>
+          </tr>
+          <tr>
+            <td>Device is offline</td>
+            <td>WebLLM (if downloaded)</td>
+          </tr>
+          <tr>
+            <td>Cloud API returns 429 (rate limit)</td>
+            <td>Alternate cloud → local fallback</td>
+          </tr>
+          <tr>
+            <td>Default (online, no issues)</td>
+            <td>Configured cloud provider (Anthropic or Gemini)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Open Source -->
+  <section>
+    <div class="section-header">
+      <h2>Open Source</h2>
+      <p>SafeClaw is open source under the MIT License. Inspect every line, fork it, make it yours.</p>
+    </div>
+    <div style="text-align: center;">
+      <a href="https://github.com/renato-umeton/safeclaw" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>🛡️ <strong>SafeClaw</strong> — Browser-native personal AI assistant with multi-provider LLM support.</p>
+    <p class="attribution">
+      SafeClaw is a fork of <a href="https://github.com/sachaa/openbrowserclaw">OpenBrowserClaw</a> by sachaa. Licensed under MIT.
+    </p>
+  </footer>
+
+</body>
+</html>
