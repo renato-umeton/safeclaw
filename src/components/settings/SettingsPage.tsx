@@ -1,23 +1,69 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Settings page
+// SafeClaw — Settings page
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from 'react';
 import {
   Palette, KeyRound, Eye, EyeOff, Bot, MessageSquare,
-  Smartphone, HardDrive, Lock, Check,
+  Smartphone, HardDrive, Lock, Check, Cpu, Wifi, WifiOff,
 } from 'lucide-react';
-import { getConfig, setConfig } from '../../db.js';
+import { getConfig } from '../../db.js';
 import { CONFIG_KEYS } from '../../config.js';
 import { getStorageEstimate, requestPersistentStorage } from '../../storage.js';
 import { decryptValue } from '../../crypto.js';
 import { getOrchestrator } from '../../stores/orchestrator-store.js';
 import { useThemeStore, type ThemeChoice } from '../../stores/theme-store.js';
+import type { ProviderId, LocalPreference } from '../../providers/types.js';
 
-const MODELS = [
-  { value: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
-  { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
-  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+// ---------------------------------------------------------------------------
+// Provider / model definitions
+// ---------------------------------------------------------------------------
+
+type ProviderInfo = {
+  id: ProviderId;
+  label: string;
+  isLocal: boolean;
+  models: { value: string; label: string }[];
+};
+
+const PROVIDERS: ProviderInfo[] = [
+  {
+    id: 'anthropic',
+    label: 'Anthropic Claude',
+    isLocal: false,
+    models: [
+      { value: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
+      { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+      { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+    ],
+  },
+  {
+    id: 'gemini',
+    label: 'Google Gemini',
+    isLocal: false,
+    models: [
+      { value: 'gemini-2.5-pro-preview-06-05', label: 'Gemini 2.5 Pro' },
+      { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+      { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+    ],
+  },
+  {
+    id: 'webllm',
+    label: 'WebLLM (Local)',
+    isLocal: true,
+    models: [
+      { value: 'qwen3-4b', label: 'Qwen3 4B (2.5 GB)' },
+      { value: 'qwen3-30b', label: 'Qwen3 30B-A3B (16 GB)' },
+    ],
+  },
+  {
+    id: 'chrome-ai',
+    label: 'Chrome AI (Gemini Nano)',
+    isLocal: true,
+    models: [
+      { value: 'gemini-nano', label: 'Gemini Nano (built-in)' },
+    ],
+  },
 ];
 
 function formatBytes(bytes: number): string {
@@ -31,13 +77,27 @@ function formatBytes(bytes: number): string {
 export function SettingsPage() {
   const orch = getOrchestrator();
 
-  // API Key
-  const [apiKey, setApiKey] = useState('');
-  const [apiKeyMasked, setApiKeyMasked] = useState(true);
-  const [apiKeySaved, setApiKeySaved] = useState(false);
+  // Provider
+  const [providerId, setProviderId] = useState<ProviderId>(orch.getProviderId());
+
+  // API Keys
+  const [anthropicKey, setAnthropicKey] = useState('');
+  const [anthropicKeyMasked, setAnthropicKeyMasked] = useState(true);
+  const [anthropicKeySaved, setAnthropicKeySaved] = useState(false);
+  const [geminiKey, setGeminiKey] = useState('');
+  const [geminiKeyMasked, setGeminiKeyMasked] = useState(true);
+  const [geminiKeySaved, setGeminiKeySaved] = useState(false);
 
   // Model
   const [model, setModel] = useState(orch.getModel());
+
+  // Local preference
+  const [localPref, setLocalPref] = useState<LocalPreference>(orch.getLocalPreference());
+
+  // Hardware info
+  const [hasWebGPU, setHasWebGPU] = useState(false);
+  const [deviceMemory, setDeviceMemory] = useState<number | null>(null);
+  const [hasChromeAI, setHasChromeAI] = useState(false);
 
   // Assistant name
   const [assistantName, setAssistantName] = useState(orch.getAssistantName());
@@ -58,15 +118,16 @@ export function SettingsPage() {
   // Load current values
   useEffect(() => {
     async function load() {
-      // API key
-      const encKey = await getConfig(CONFIG_KEYS.ANTHROPIC_API_KEY);
-      if (encKey) {
-        try {
-          const dec = await decryptValue(encKey);
-          setApiKey(dec);
-        } catch {
-          setApiKey('');
-        }
+      // Anthropic API key
+      const encAnthropicKey = await getConfig(CONFIG_KEYS.ANTHROPIC_API_KEY);
+      if (encAnthropicKey) {
+        try { setAnthropicKey(await decryptValue(encAnthropicKey)); } catch { /* empty */ }
+      }
+
+      // Gemini API key
+      const encGeminiKey = await getConfig(CONFIG_KEYS.GEMINI_API_KEY);
+      if (encGeminiKey) {
+        try { setGeminiKey(await decryptValue(encGeminiKey)); } catch { /* empty */ }
       }
 
       // Telegram
@@ -74,11 +135,7 @@ export function SettingsPage() {
       if (token) setTelegramToken(token);
       const chatIds = await getConfig(CONFIG_KEYS.TELEGRAM_CHAT_IDS);
       if (chatIds) {
-        try {
-          setTelegramChatIds(JSON.parse(chatIds).join(', '));
-        } catch {
-          setTelegramChatIds(chatIds);
-        }
+        try { setTelegramChatIds(JSON.parse(chatIds).join(', ')); } catch { setTelegramChatIds(chatIds); }
       }
 
       // Storage
@@ -88,19 +145,60 @@ export function SettingsPage() {
       if (navigator.storage?.persisted) {
         setIsPersistent(await navigator.storage.persisted());
       }
+
+      // Hardware checks
+      setHasWebGPU('gpu' in navigator);
+      setDeviceMemory((navigator as any).deviceMemory ?? null);
+
+      // Chrome AI check
+      try {
+        const ai = (window as any).ai;
+        if (ai?.languageModel) {
+          const caps = await ai.languageModel.capabilities();
+          setHasChromeAI(caps.available === 'readily');
+        }
+      } catch { /* empty */ }
     }
     load();
   }, []);
 
-  async function handleSaveApiKey() {
-    await orch.setApiKey(apiKey.trim());
-    setApiKeySaved(true);
-    setTimeout(() => setApiKeySaved(false), 2000);
+  // Derived: models for current provider
+  const currentProvider = PROVIDERS.find((p) => p.id === providerId)!;
+  const availableModels = currentProvider?.models || [];
+
+  // Handlers
+  async function handleProviderChange(id: ProviderId) {
+    setProviderId(id);
+    await orch.setProviderId(id);
+    // Set default model for new provider
+    const prov = PROVIDERS.find((p) => p.id === id);
+    if (prov && prov.models.length > 0) {
+      const newModel = prov.models[0].value;
+      setModel(newModel);
+      await orch.setModel(newModel);
+    }
+  }
+
+  async function handleSaveAnthropicKey() {
+    await orch.setApiKey('anthropic', anthropicKey.trim());
+    setAnthropicKeySaved(true);
+    setTimeout(() => setAnthropicKeySaved(false), 2000);
+  }
+
+  async function handleSaveGeminiKey() {
+    await orch.setApiKey('gemini', geminiKey.trim());
+    setGeminiKeySaved(true);
+    setTimeout(() => setGeminiKeySaved(false), 2000);
   }
 
   async function handleModelChange(value: string) {
     setModel(value);
     await orch.setModel(value);
+  }
+
+  async function handleLocalPrefChange(value: LocalPreference) {
+    setLocalPref(value);
+    await orch.setLocalPreference(value);
   }
 
   async function handleNameSave() {
@@ -147,58 +245,172 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* ---- API Key ---- */}
+      {/* ---- Provider Selection ---- */}
       <div className="card card-bordered bg-base-200">
         <div className="card-body p-4 sm:p-6 gap-3">
-          <h3 className="card-title text-base gap-2"><KeyRound className="w-4 h-4" /> Anthropic API Key</h3>
-          <div className="flex gap-2">
-            <input
-              type={apiKeyMasked ? 'password' : 'text'}
-              className="input input-bordered input-sm w-full flex-1 font-mono"
-              placeholder="sk-ant-..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => setApiKeyMasked(!apiKeyMasked)}
+          <h3 className="card-title text-base gap-2"><Bot className="w-4 h-4" /> LLM Provider</h3>
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">Active Provider</legend>
+            <select
+              className="select select-bordered select-sm w-full"
+              value={providerId}
+              onChange={(e) => handleProviderChange(e.target.value as ProviderId)}
             >
-              {apiKeyMasked ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={handleSaveApiKey}
-              disabled={!apiKey.trim()}
+              {PROVIDERS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}{p.isLocal ? ' (Local)' : ''}
+                </option>
+              ))}
+            </select>
+          </fieldset>
+
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">Model</legend>
+            <select
+              className="select select-bordered select-sm w-full"
+              value={model}
+              onChange={(e) => handleModelChange(e.target.value)}
             >
-              Save
-            </button>
-            {apiKeySaved && (
-              <span className="text-success text-sm flex items-center gap-1"><Check className="w-4 h-4" /> Saved</span>
-            )}
-          </div>
+              {availableModels.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </fieldset>
+
           <p className="text-xs opacity-50">
-            Your API key is encrypted and stored locally. It never leaves your browser.
+            Quality-first routing: cloud models by default, local fallback when offline or rate-limited.
           </p>
         </div>
       </div>
 
-      {/* ---- Model ---- */}
+      {/* ---- API Keys ---- */}
       <div className="card card-bordered bg-base-200">
         <div className="card-body p-4 sm:p-6 gap-3">
-          <h3 className="card-title text-base gap-2"><Bot className="w-4 h-4" /> Model</h3>
-          <select
-            className="select select-bordered select-sm"
-            value={model}
-            onChange={(e) => handleModelChange(e.target.value)}
-          >
-            {MODELS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+          <h3 className="card-title text-base gap-2"><KeyRound className="w-4 h-4" /> API Keys</h3>
+
+          {/* Anthropic */}
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">Anthropic API Key</legend>
+            <div className="flex gap-2">
+              <input
+                type={anthropicKeyMasked ? 'password' : 'text'}
+                className="input input-bordered input-sm w-full flex-1 font-mono"
+                placeholder="sk-ant-..."
+                value={anthropicKey}
+                onChange={(e) => setAnthropicKey(e.target.value)}
+              />
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setAnthropicKeyMasked(!anthropicKeyMasked)}
+              >
+                {anthropicKeyMasked ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSaveAnthropicKey}
+                disabled={!anthropicKey.trim()}
+              >
+                Save
+              </button>
+              {anthropicKeySaved && (
+                <span className="text-success text-sm flex items-center gap-1"><Check className="w-4 h-4" /> Saved</span>
+              )}
+            </div>
+          </fieldset>
+
+          {/* Gemini */}
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">Google Gemini API Key</legend>
+            <div className="flex gap-2">
+              <input
+                type={geminiKeyMasked ? 'password' : 'text'}
+                className="input input-bordered input-sm w-full flex-1 font-mono"
+                placeholder="AIza..."
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+              />
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setGeminiKeyMasked(!geminiKeyMasked)}
+              >
+                {geminiKeyMasked ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleSaveGeminiKey}
+                disabled={!geminiKey.trim()}
+              >
+                Save
+              </button>
+              {geminiKeySaved && (
+                <span className="text-success text-sm flex items-center gap-1"><Check className="w-4 h-4" /> Saved</span>
+              )}
+            </div>
+          </fieldset>
+
+          <p className="text-xs opacity-50">
+            API keys are encrypted and stored locally. They never leave your browser except to call the respective APIs.
+          </p>
+        </div>
+      </div>
+
+      {/* ---- Local Models ---- */}
+      <div className="card card-bordered bg-base-200">
+        <div className="card-body p-4 sm:p-6 gap-3">
+          <h3 className="card-title text-base gap-2"><Cpu className="w-4 h-4" /> Local Models</h3>
+
+          {/* Hardware compatibility */}
+          <div className="flex flex-wrap gap-2">
+            <div className={`badge badge-sm gap-1.5 ${hasWebGPU ? 'badge-success' : 'badge-error'}`}>
+              {hasWebGPU ? 'WebGPU available' : 'WebGPU not available'}
+            </div>
+            {deviceMemory !== null && (
+              <div className={`badge badge-sm gap-1.5 ${deviceMemory >= 4 ? 'badge-success' : 'badge-warning'}`}>
+                {deviceMemory} GB device memory
+              </div>
+            )}
+            <div className={`badge badge-sm gap-1.5 ${hasChromeAI ? 'badge-success' : 'badge-ghost'}`}>
+              {hasChromeAI ? 'Chrome AI ready' : 'Chrome AI not available'}
+            </div>
+          </div>
+
+          {/* Local preference */}
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">Local Model Preference</legend>
+            <select
+              className="select select-bordered select-sm w-full"
+              value={localPref}
+              onChange={(e) => handleLocalPrefChange(e.target.value as LocalPreference)}
+            >
+              <option value="off">Off — cloud only</option>
+              <option value="offline-only">Offline fallback — use local when no internet</option>
+              <option value="always">Always local — prefer local models</option>
+            </select>
+          </fieldset>
+
+          <div className="flex items-center gap-2 text-xs opacity-60">
+            {navigator.onLine
+              ? <><Wifi className="w-3 h-3" /> Online</>
+              : <><WifiOff className="w-3 h-3" /> Offline — local models will be used</>
+            }
+          </div>
+
+          {!hasWebGPU && (
+            <p className="text-xs text-warning">
+              WebGPU is required for WebLLM local models. Use Chrome 113+ with WebGPU enabled.
+            </p>
+          )}
+          {deviceMemory !== null && deviceMemory < 4 && (
+            <p className="text-xs text-warning">
+              Less than 4 GB device memory detected. Local models may not run reliably.
+            </p>
+          )}
         </div>
       </div>
 

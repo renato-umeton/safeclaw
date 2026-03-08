@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — WebVM wrapper (v86-based Alpine Linux in WebAssembly)
+// SafeClaw — WebVM wrapper (v86-based Alpine Linux in WebAssembly)
 // ---------------------------------------------------------------------------
 //
 // This module manages a lightweight Linux VM running inside a Web Worker.

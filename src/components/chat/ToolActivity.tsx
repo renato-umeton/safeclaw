@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Tool activity indicator
+// SafeClaw — Tool activity indicator
 // ---------------------------------------------------------------------------
 
 interface Props {

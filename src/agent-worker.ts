@@ -1,20 +1,60 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Agent Worker
+// SafeClaw — Agent Worker
 // ---------------------------------------------------------------------------
 //
-// Runs in a dedicated Web Worker. Owns the Claude API tool-use loop.
+// Runs in a dedicated Web Worker. Owns the LLM provider tool-use loop.
 // Communicates with the main thread via postMessage.
 //
-// This is the browser equivalent of NanoClaw's container agent runner.
-// Instead of Claude Agent SDK in a Linux container, we use raw Anthropic
-// API calls with a tool-use loop.
+// Uses the provider abstraction layer to support multiple LLM backends
+// (Anthropic, Gemini, WebLLM) through a unified interface.
 
-import type { WorkerInbound, WorkerOutbound, InvokePayload, CompactPayload, ConversationMessage, ThinkingLogEntry, TokenUsage } from './types.js';
+import type { WorkerInbound, WorkerOutbound, InvokePayload, CompactPayload, ConversationMessage, ThinkingLogEntry, WorkerProviderConfig } from './types.js';
 import { TOOL_DEFINITIONS } from './tools.js';
-import { ANTHROPIC_API_URL, ANTHROPIC_API_VERSION, FETCH_MAX_RESPONSE } from './config.js';
+import { FETCH_MAX_RESPONSE } from './config.js';
 import { readGroupFile, writeGroupFile, listGroupFiles } from './storage.js';
 import { executeShell } from './shell.js';
 import { ulid } from './ulid.js';
+import type { LLMProvider, ChatRequest, ProviderId } from './providers/types.js';
+import { AnthropicProvider } from './providers/anthropic.js';
+import { GeminiProvider } from './providers/gemini.js';
+import { WebLLMProvider } from './providers/webllm.js';
+
+// ---------------------------------------------------------------------------
+// Provider cache — reuse instances across invocations
+// ---------------------------------------------------------------------------
+
+const providerCache = new Map<string, LLMProvider>();
+
+function getOrCreateProvider(config: WorkerProviderConfig): LLMProvider {
+  const id = config.providerId as ProviderId;
+  const cacheKey = `${id}:${config.apiKeys[id] || ''}`;
+
+  const cached = providerCache.get(cacheKey);
+  if (cached) return cached;
+
+  let provider: LLMProvider;
+  switch (id) {
+    case 'anthropic':
+      provider = new AnthropicProvider(config.apiKeys.anthropic || '');
+      break;
+    case 'gemini':
+      provider = new GeminiProvider(config.apiKeys.gemini || '');
+      break;
+    case 'webllm':
+      provider = new WebLLMProvider((progress) => {
+        post({
+          type: 'webllm-progress',
+          payload: { model: progress.model, progress: progress.progress, status: progress.status },
+        });
+      });
+      break;
+    default:
+      throw new Error(`Unsupported provider in worker: ${id}. Chrome AI must run on the main thread.`);
+  }
+
+  providerCache.set(cacheKey, provider);
+  return provider;
+}
 
 // ---------------------------------------------------------------------------
 // Message handler
@@ -43,47 +83,33 @@ self.onmessage = async (event: MessageEvent<WorkerInbound>) => {
 // ---------------------------------------------------------------------------
 
 async function handleInvoke(payload: InvokePayload): Promise<void> {
-  const { groupId, messages, systemPrompt, apiKey, model, maxTokens } = payload;
+  const { groupId, messages, systemPrompt, providerConfig } = payload;
+  const { model, maxTokens } = providerConfig;
+
+  const provider = getOrCreateProvider(providerConfig);
 
   post({ type: 'typing', payload: { groupId } });
-  log(groupId, 'info', 'Starting', `Model: ${model} · Max tokens: ${maxTokens}`);
+  log(groupId, 'info', 'Starting', `Provider: ${provider.name} · Model: ${model} · Max tokens: ${maxTokens}`);
 
   try {
     let currentMessages: ConversationMessage[] = [...messages];
     let iterations = 0;
-    const maxIterations = 25; // Safety limit to prevent infinite loops
+    const maxIterations = provider.isLocal ? 10 : 25; // Lower limit for local models
 
     while (iterations < maxIterations) {
       iterations++;
 
-      const body = {
+      const request: ChatRequest = {
         model,
-        max_tokens: maxTokens,
-        cache_control: { type: 'ephemeral' },
+        maxTokens,
         system: systemPrompt,
         messages: currentMessages,
-        tools: TOOL_DEFINITIONS,
+        tools: provider.supportsToolUse() ? TOOL_DEFINITIONS : undefined,
       };
 
       log(groupId, 'api-call', `API call #${iterations}`, `${currentMessages.length} messages in context`);
 
-      const res = await fetch(ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': ANTHROPIC_API_VERSION,
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const errBody = await res.text();
-        throw new Error(`Anthropic API error ${res.status}: ${errBody}`);
-      }
-
-      const result = await res.json();
+      const result = await provider.chat(request);
 
       // Emit token usage
       if (result.usage) {
@@ -91,11 +117,11 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
           type: 'token-usage',
           payload: {
             groupId,
-            inputTokens: result.usage.input_tokens || 0,
-            outputTokens: result.usage.output_tokens || 0,
-            cacheReadTokens: result.usage.cache_read_input_tokens || 0,
-            cacheCreationTokens: result.usage.cache_creation_input_tokens || 0,
-            contextLimit: getContextLimit(model),
+            inputTokens: result.usage.inputTokens,
+            outputTokens: result.usage.outputTokens,
+            cacheReadTokens: result.usage.cacheReadTokens || 0,
+            cacheCreationTokens: result.usage.cacheCreationTokens || 0,
+            contextLimit: provider.getContextLimit(model),
           },
         });
       }
@@ -103,18 +129,18 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
       // Log any text blocks in the response (intermediate reasoning)
       for (const block of result.content) {
         if (block.type === 'text' && block.text) {
-          const preview = block.text.length > 200 ? block.text.slice(0, 200) + '…' : block.text;
+          const preview = block.text.length > 200 ? block.text.slice(0, 200) + '...' : block.text;
           log(groupId, 'text', 'Response text', preview);
         }
       }
 
-      if (result.stop_reason === 'tool_use') {
+      if (result.stopReason === 'tool_use') {
         // Execute all tool calls
         const toolResults = [];
         for (const block of result.content) {
           if (block.type === 'tool_use') {
             const inputPreview = JSON.stringify(block.input);
-            const inputShort = inputPreview.length > 300 ? inputPreview.slice(0, 300) + '…' : inputPreview;
+            const inputShort = inputPreview.length > 300 ? inputPreview.slice(0, 300) + '...' : inputPreview;
             log(groupId, 'tool-call', `Tool: ${block.name}`, inputShort);
 
             post({
@@ -125,7 +151,7 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
             const output = await executeTool(block.name, block.input, groupId);
 
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
-            const outputShort = outputStr.length > 500 ? outputStr.slice(0, 500) + '…' : outputStr;
+            const outputShort = outputStr.length > 500 ? outputStr.slice(0, 500) + '...' : outputStr;
             log(groupId, 'tool-result', `Result: ${block.name}`, outputShort);
 
             post({
@@ -144,7 +170,7 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
         }
 
         // Continue the conversation with tool results
-        currentMessages.push({ role: 'assistant', content: result.content });
+        currentMessages.push({ role: 'assistant', content: result.content as any });
         currentMessages.push({ role: 'user', content: toolResults as any });
 
         // Re-signal typing between tool iterations
@@ -152,8 +178,8 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
       } else {
         // Final response — extract text
         const text = result.content
-          .filter((b: { type: string }) => b.type === 'text')
-          .map((b: { text: string }) => b.text)
+          .filter((b) => b.type === 'text')
+          .map((b) => (b as { type: 'text'; text: string }).text)
           .join('');
 
         // Strip internal tags (matching NanoClaw pattern)
@@ -169,21 +195,25 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
       type: 'response',
       payload: {
         groupId,
-        text: '⚠️ Reached maximum tool-use iterations (25). Stopping to avoid excessive API usage.',
+        text: `Warning: Reached maximum tool-use iterations (${maxIterations}). Stopping to avoid excessive API usage.`,
       },
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    post({ type: 'error', payload: { groupId, error: message } });
+    const errorCode = (err as any)?.statusCode;
+    post({ type: 'error', payload: { groupId, error: message, errorCode } });
   }
 }
 
 // ---------------------------------------------------------------------------
-// Context compaction — ask Claude to summarize the conversation
+// Context compaction — ask the LLM to summarize the conversation
 // ---------------------------------------------------------------------------
 
 async function handleCompact(payload: CompactPayload): Promise<void> {
-  const { groupId, messages, systemPrompt, apiKey, model, maxTokens } = payload;
+  const { groupId, messages, systemPrompt, providerConfig } = payload;
+  const { model, maxTokens } = providerConfig;
+
+  const provider = getOrCreateProvider(providerConfig);
 
   post({ type: 'typing', payload: { groupId } });
   log(groupId, 'info', 'Compacting context', `Summarizing ${messages.length} messages`);
@@ -208,34 +238,19 @@ async function handleCompact(payload: CompactPayload): Promise<void> {
       },
     ];
 
-    const body = {
+    const request: ChatRequest = {
       model,
-      max_tokens: Math.min(maxTokens, 4096),
-      cache_control: { type: 'ephemeral' },
+      maxTokens: Math.min(maxTokens, 4096),
       system: compactSystemPrompt,
       messages: compactMessages,
+      // No tools needed for compaction
     };
 
-    const res = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': ANTHROPIC_API_VERSION,
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify(body),
-    });
+    const result = await provider.chat(request);
 
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`Anthropic API error ${res.status}: ${errBody}`);
-    }
-
-    const result = await res.json();
     const summary = result.content
-      .filter((b: { type: string }) => b.type === 'text')
-      .map((b: { text: string }) => b.text)
+      .filter((b) => b.type === 'text')
+      .map((b) => (b as { type: 'text'; text: string }).text)
       .join('');
 
     log(groupId, 'info', 'Compaction complete', `Summary: ${summary.length} chars`);
@@ -379,12 +394,6 @@ function stripHtml(html: string): string {
   // Collapse whitespace
   text = text.replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
   return text;
-}
-
-/** Map model names to their context window limits (tokens). */
-function getContextLimit(_model: string): number {
-  // The actual session context window — 200k tokens for Claude Sonnet/Opus.
-  return 200_000;
 }
 
 function log(

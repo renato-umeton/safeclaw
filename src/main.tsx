@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — React entry point
+// SafeClaw — React entry point
 // ---------------------------------------------------------------------------
 
 import { StrictMode } from 'react';

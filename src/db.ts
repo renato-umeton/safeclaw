@@ -1,16 +1,93 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — IndexedDB database layer
+// SafeClaw — IndexedDB database layer
 // ---------------------------------------------------------------------------
 
-import { DB_NAME, DB_VERSION } from './config.js';
+import { DB_NAME, DB_VERSION, LEGACY_DB_NAME } from './config.js';
 import type { StoredMessage, Task, ConfigEntry, Session, ConversationMessage } from './types.js';
 
 let db: IDBDatabase | null = null;
 
 /**
+ * Migrate data from the legacy 'openbrowserclaw' database to 'safeclaw'.
+ */
+async function migrateFromLegacyDb(): Promise<void> {
+  const databases = await indexedDB.databases?.() || [];
+  const legacyExists = databases.some((d: any) => d.name === LEGACY_DB_NAME);
+  if (!legacyExists) return;
+
+  const newExists = databases.some((d: any) => d.name === DB_NAME);
+  if (newExists) {
+    try { indexedDB.deleteDatabase(LEGACY_DB_NAME); } catch { /* empty */ }
+    return;
+  }
+
+  console.log(`[SafeClaw] Migrating database from '${LEGACY_DB_NAME}' to '${DB_NAME}'...`);
+
+  const legacyDb = await new Promise<IDBDatabase>((resolve, reject) => {
+    const req = indexedDB.open(LEGACY_DB_NAME);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+
+  const newDb = await new Promise<IDBDatabase>((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const database = req.result;
+      if (!database.objectStoreNames.contains('messages')) {
+        const msgStore = database.createObjectStore('messages', { keyPath: 'id' });
+        msgStore.createIndex('by-group-time', ['groupId', 'timestamp']);
+        msgStore.createIndex('by-group', 'groupId');
+      }
+      if (!database.objectStoreNames.contains('sessions')) {
+        database.createObjectStore('sessions', { keyPath: 'groupId' });
+      }
+      if (!database.objectStoreNames.contains('tasks')) {
+        const taskStore = database.createObjectStore('tasks', { keyPath: 'id' });
+        taskStore.createIndex('by-group', 'groupId');
+        taskStore.createIndex('by-enabled', 'enabled');
+      }
+      if (!database.objectStoreNames.contains('config')) {
+        database.createObjectStore('config', { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+
+  const storeNames = ['messages', 'sessions', 'tasks', 'config'];
+  for (const storeName of storeNames) {
+    if (!legacyDb.objectStoreNames.contains(storeName)) continue;
+    const items = await new Promise<any[]>((resolve, reject) => {
+      const tx = legacyDb.transaction(storeName, 'readonly');
+      const req = tx.objectStore(storeName).getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    if (items.length > 0) {
+      await new Promise<void>((resolve, reject) => {
+        const tx = newDb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        for (const item of items) store.put(item);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+  }
+
+  legacyDb.close();
+  newDb.close();
+  try { indexedDB.deleteDatabase(LEGACY_DB_NAME); } catch { /* empty */ }
+  console.log('[SafeClaw] Database migration complete.');
+}
+
+/**
  * Open (or create) the IndexedDB database.
  */
-export function openDatabase(): Promise<IDBDatabase> {
+export async function openDatabase(): Promise<IDBDatabase> {
+  try { await migrateFromLegacyDb(); } catch (err) {
+    console.warn('[SafeClaw] DB migration failed (non-fatal):', err);
+  }
+
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Shared types
+// SafeClaw — Shared types
 // ---------------------------------------------------------------------------
 
 /** Inbound message from any channel */
@@ -76,30 +76,36 @@ export interface CompactPayload {
   groupId: string;
   messages: ConversationMessage[];
   systemPrompt: string;
-  apiKey: string;
-  model: string;
-  maxTokens: number;
+  providerConfig: WorkerProviderConfig;
 }
 
 export interface InvokePayload {
   groupId: string;
   messages: ConversationMessage[];
   systemPrompt: string;
-  apiKey: string;
+  providerConfig: WorkerProviderConfig;
+}
+
+/** Provider configuration passed from main thread to worker */
+export interface WorkerProviderConfig {
+  providerId: string;
   model: string;
   maxTokens: number;
+  apiKeys: Record<string, string>;
+  localPreference: string;
 }
 
 /** Messages sent from Agent Worker → main thread */
 export type WorkerOutbound =
   | { type: 'response'; payload: { groupId: string; text: string } }
-  | { type: 'error'; payload: { groupId: string; error: string } }
+  | { type: 'error'; payload: { groupId: string; error: string; errorCode?: number } }
   | { type: 'typing'; payload: { groupId: string } }
   | { type: 'tool-activity'; payload: { groupId: string; tool: string; status: string } }
   | { type: 'thinking-log'; payload: ThinkingLogEntry }
   | { type: 'compact-done'; payload: { groupId: string; summary: string } }
   | { type: 'token-usage'; payload: TokenUsage }
-  | { type: 'task-created'; payload: { task: Task } };
+  | { type: 'task-created'; payload: { task: Task } }
+  | { type: 'webllm-progress'; payload: { model: string; progress: number; status: string } };
 
 /** Token usage info from the API */
 export interface TokenUsage {

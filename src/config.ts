@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Configuration constants
+// SafeClaw — Configuration constants
 // ---------------------------------------------------------------------------
 
 /** Default assistant name (used in trigger pattern) */
@@ -47,20 +47,33 @@ export const PROCESS_LOOP_INTERVAL = 100;
 export const FETCH_MAX_RESPONSE = 20_000;
 
 /** IndexedDB database name */
-export const DB_NAME = 'openbrowserclaw';
+export const DB_NAME = 'safeclaw';
+
+/** Legacy IndexedDB database name (for migration) */
+export const LEGACY_DB_NAME = 'openbrowserclaw';
 
 /** IndexedDB version */
 export const DB_VERSION = 1;
 
 /** OPFS root directory name */
-export const OPFS_ROOT = 'openbrowserclaw';
+export const OPFS_ROOT = 'safeclaw';
+
+/** Legacy OPFS root (for migration) */
+export const LEGACY_OPFS_ROOT = 'openbrowserclaw';
 
 /** Default group for browser chat */
 export const DEFAULT_GROUP_ID = 'br:main';
 
+/** Default provider */
+export const DEFAULT_PROVIDER = 'anthropic';
+
 /** Config keys */
 export const CONFIG_KEYS = {
   ANTHROPIC_API_KEY: 'anthropic_api_key',
+  GEMINI_API_KEY: 'gemini_api_key',
+  PROVIDER: 'provider',
+  WEBLLM_MODEL: 'webllm_model',
+  LOCAL_PREFERENCE: 'local_preference',
   TELEGRAM_BOT_TOKEN: 'telegram_bot_token',
   TELEGRAM_CHAT_IDS: 'telegram_chat_ids',
   TRIGGER_PATTERN: 'trigger_pattern',
