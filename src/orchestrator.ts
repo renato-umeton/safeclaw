@@ -1,15 +1,14 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Orchestrator
+// SafeClaw — Orchestrator
 // ---------------------------------------------------------------------------
 //
 // The orchestrator is the main thread coordinator. It manages:
-// - State machine (idle → thinking → responding)
+// - State machine (idle -> thinking -> responding)
 // - Message queue and routing
 // - Agent worker lifecycle
 // - Channel coordination
 // - Task scheduling
-//
-// This mirrors NanoClaw's src/index.ts but adapted for browser primitives.
+// - Multi-provider LLM configuration
 
 import type {
   InboundMessage,
@@ -19,6 +18,7 @@ import type {
   Task,
   ConversationMessage,
   ThinkingLogEntry,
+  WorkerProviderConfig,
 } from './types.js';
 import {
   ASSISTANT_NAME,
@@ -27,6 +27,7 @@ import {
   DEFAULT_GROUP_ID,
   DEFAULT_MAX_TOKENS,
   DEFAULT_MODEL,
+  DEFAULT_PROVIDER,
   buildTriggerPattern,
 } from './config.js';
 import {
@@ -40,12 +41,14 @@ import {
   clearGroupMessages,
 } from './db.js';
 import { readGroupFile } from './storage.js';
-import { encryptValue, decryptValue } from './crypto.js';
+import { encryptValue, decryptValue, migrateKeystore } from './crypto.js';
+import { migrateFromLegacyOpfs } from './storage.js';
 import { BrowserChatChannel } from './channels/browser-chat.js';
 import { TelegramChannel } from './channels/telegram.js';
 import { Router } from './router.js';
 import { TaskScheduler } from './task-scheduler.js';
 import { ulid } from './ulid.js';
+import type { ProviderId, LocalPreference } from './providers/types.js';
 
 // ---------------------------------------------------------------------------
 // Event emitter for UI updates
@@ -62,6 +65,7 @@ type EventMap = {
   'session-reset': { groupId: string };
   'context-compacted': { groupId: string; summary: string };
   'token-usage': import('./types.js').TokenUsage;
+  'webllm-progress': { model: string; progress: number; status: string };
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -100,9 +104,14 @@ export class Orchestrator {
   private state: OrchestratorState = 'idle';
   private triggerPattern!: RegExp;
   private assistantName: string = ASSISTANT_NAME;
-  private apiKey: string = '';
+
+  // Multi-provider config
+  private apiKeys: Partial<Record<ProviderId, string>> = {};
+  private providerId: ProviderId = DEFAULT_PROVIDER as ProviderId;
   private model: string = DEFAULT_MODEL;
   private maxTokens: number = DEFAULT_MAX_TOKENS;
+  private localPreference: LocalPreference = 'offline-only';
+
   private messageQueue: InboundMessage[] = [];
   private processing = false;
   private pendingScheduledTasks = new Set<string>();
@@ -111,27 +120,46 @@ export class Orchestrator {
    * Initialize the orchestrator. Must be called before anything else.
    */
   async init(): Promise<void> {
-    // Open database
+    // Run migrations (keystore must migrate before DB, since DB migration reads encrypted keys)
+    try { await migrateKeystore(); } catch (err) { console.warn('[SafeClaw] Keystore migration failed:', err); }
+    try { await migrateFromLegacyOpfs(); } catch (err) { console.warn('[SafeClaw] OPFS migration failed:', err); }
+
+    // Open database (runs its own legacy DB migration)
     await openDatabase();
 
     // Load config
     this.assistantName = (await getConfig(CONFIG_KEYS.ASSISTANT_NAME)) || ASSISTANT_NAME;
     this.triggerPattern = buildTriggerPattern(this.assistantName);
-    const storedKey = await getConfig(CONFIG_KEYS.ANTHROPIC_API_KEY);
-    if (storedKey) {
+
+    // Load API keys
+    const storedAnthropicKey = await getConfig(CONFIG_KEYS.ANTHROPIC_API_KEY);
+    if (storedAnthropicKey) {
       try {
-        this.apiKey = await decryptValue(storedKey);
+        this.apiKeys.anthropic = await decryptValue(storedAnthropicKey);
       } catch {
-        // Stored as plaintext from before encryption — clear it
-        this.apiKey = '';
+        this.apiKeys.anthropic = '';
         await setConfig(CONFIG_KEYS.ANTHROPIC_API_KEY, '');
       }
     }
+
+    const storedGeminiKey = await getConfig(CONFIG_KEYS.GEMINI_API_KEY);
+    if (storedGeminiKey) {
+      try {
+        this.apiKeys.gemini = await decryptValue(storedGeminiKey);
+      } catch {
+        this.apiKeys.gemini = '';
+        await setConfig(CONFIG_KEYS.GEMINI_API_KEY, '');
+      }
+    }
+
+    // Load provider/model config
+    this.providerId = ((await getConfig(CONFIG_KEYS.PROVIDER)) || DEFAULT_PROVIDER) as ProviderId;
     this.model = (await getConfig(CONFIG_KEYS.MODEL)) || DEFAULT_MODEL;
     this.maxTokens = parseInt(
       (await getConfig(CONFIG_KEYS.MAX_TOKENS)) || String(DEFAULT_MAX_TOKENS),
       10,
     );
+    this.localPreference = ((await getConfig(CONFIG_KEYS.LOCAL_PREFERENCE)) || 'offline-only') as LocalPreference;
 
     // Set up router
     this.router = new Router(this.browserChat, this.telegram);
@@ -183,19 +211,44 @@ export class Orchestrator {
   }
 
   /**
-   * Check if the API key is configured.
+   * Check if at least one provider is configured with an API key.
    */
   isConfigured(): boolean {
-    return this.apiKey.length > 0;
+    return !!(this.apiKeys.anthropic || this.apiKeys.gemini);
   }
 
   /**
-   * Update the API key.
+   * Update an API key for a specific provider.
    */
-  async setApiKey(key: string): Promise<void> {
-    this.apiKey = key;
+  async setApiKey(provider: ProviderId, key: string): Promise<void> {
+    this.apiKeys[provider] = key;
+    const configKey = provider === 'anthropic'
+      ? CONFIG_KEYS.ANTHROPIC_API_KEY
+      : CONFIG_KEYS.GEMINI_API_KEY;
     const encrypted = await encryptValue(key);
-    await setConfig(CONFIG_KEYS.ANTHROPIC_API_KEY, encrypted);
+    await setConfig(configKey, encrypted);
+  }
+
+  /**
+   * Get API key for a provider (decrypted).
+   */
+  getApiKey(provider: ProviderId): string {
+    return this.apiKeys[provider] || '';
+  }
+
+  /**
+   * Get current provider ID.
+   */
+  getProviderId(): ProviderId {
+    return this.providerId;
+  }
+
+  /**
+   * Set the active provider.
+   */
+  async setProviderId(id: ProviderId): Promise<void> {
+    this.providerId = id;
+    await setConfig(CONFIG_KEYS.PROVIDER, id);
   }
 
   /**
@@ -211,6 +264,21 @@ export class Orchestrator {
   async setModel(model: string): Promise<void> {
     this.model = model;
     await setConfig(CONFIG_KEYS.MODEL, model);
+  }
+
+  /**
+   * Get local preference.
+   */
+  getLocalPreference(): LocalPreference {
+    return this.localPreference;
+  }
+
+  /**
+   * Set local preference.
+   */
+  async setLocalPreference(pref: LocalPreference): Promise<void> {
+    this.localPreference = pref;
+    await setConfig(CONFIG_KEYS.LOCAL_PREFERENCE, pref);
   }
 
   /**
@@ -251,20 +319,18 @@ export class Orchestrator {
    * Start a completely new session — clears message history for the group.
    */
   async newSession(groupId: string = DEFAULT_GROUP_ID): Promise<void> {
-    // Clear messages from DB
     await clearGroupMessages(groupId);
     this.events.emit('session-reset', { groupId });
   }
 
   /**
    * Compact (summarize) the current context to reduce token usage.
-   * Asks Claude to produce a summary, then replaces the history with it.
    */
   async compactContext(groupId: string = DEFAULT_GROUP_ID): Promise<void> {
-    if (!this.apiKey) {
+    if (!this.isConfigured()) {
       this.events.emit('error', {
         groupId,
-        error: 'API key not configured. Cannot compact context.',
+        error: 'No API key configured. Cannot compact context.',
       });
       return;
     }
@@ -297,9 +363,7 @@ export class Orchestrator {
         groupId,
         messages,
         systemPrompt,
-        apiKey: this.apiKey,
-        model: this.model,
-        maxTokens: this.maxTokens,
+        providerConfig: this.buildProviderConfig(),
       },
     });
   }
@@ -316,6 +380,20 @@ export class Orchestrator {
   // -----------------------------------------------------------------------
   // Private
   // -----------------------------------------------------------------------
+
+  /** Build the provider config to pass to the worker */
+  private buildProviderConfig(): WorkerProviderConfig {
+    return {
+      providerId: this.providerId,
+      model: this.model,
+      maxTokens: this.maxTokens,
+      apiKeys: {
+        anthropic: this.apiKeys.anthropic || '',
+        gemini: this.apiKeys.gemini || '',
+      },
+      localPreference: this.localPreference,
+    };
+  }
 
   private setState(state: OrchestratorState): void {
     this.state = state;
@@ -350,12 +428,11 @@ export class Orchestrator {
   private async processQueue(): Promise<void> {
     if (this.processing) return;
     if (this.messageQueue.length === 0) return;
-    if (!this.apiKey) {
-      // Can't process without API key
+    if (!this.isConfigured()) {
       const msg = this.messageQueue.shift()!;
       this.events.emit('error', {
         groupId: msg.groupId,
-        error: 'API key not configured. Go to Settings to add your Anthropic API key.',
+        error: 'No API key configured. Go to Settings to add your API key.',
       });
       return;
     }
@@ -412,16 +489,14 @@ export class Orchestrator {
 
     const systemPrompt = buildSystemPrompt(this.assistantName, memory);
 
-    // Send to agent worker
+    // Send to agent worker with provider config
     this.agentWorker.postMessage({
       type: 'invoke',
       payload: {
         groupId,
         messages,
         systemPrompt,
-        apiKey: this.apiKey,
-        model: this.model,
-        maxTokens: this.maxTokens,
+        providerConfig: this.buildProviderConfig(),
       },
     });
   }
@@ -446,7 +521,7 @@ export class Orchestrator {
 
       case 'error': {
         const { groupId, error } = msg.payload;
-        await this.deliverResponse(groupId, `⚠️ Error: ${error}`);
+        await this.deliverResponse(groupId, `Warning: Error: ${error}`);
         break;
       }
 
@@ -476,6 +551,11 @@ export class Orchestrator {
         this.events.emit('token-usage', msg.payload);
         break;
       }
+
+      case 'webllm-progress': {
+        this.events.emit('webllm-progress', msg.payload);
+        break;
+      }
     }
   }
 
@@ -488,7 +568,7 @@ export class Orchestrator {
       id: ulid(),
       groupId,
       sender: this.assistantName,
-      content: `📝 **Context Compacted**\n\n${summary}`,
+      content: `**Context Compacted**\n\n${summary}`,
       timestamp: Date.now(),
       channel: groupId.startsWith('tg:') ? 'telegram' : 'browser',
       isFromMe: true,
@@ -573,7 +653,7 @@ function playNotificationChime(): void {
     const ctx = new AudioContext();
     const now = ctx.currentTime;
 
-    // Two-tone chime: C5 → E5
+    // Two-tone chime: C5 -> E5
     const frequencies = [523.25, 659.25];
     for (let i = 0; i < frequencies.length; i++) {
       const osc = ctx.createOscillator();

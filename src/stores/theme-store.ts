@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Theme Store (Zustand)
+// SafeClaw — Theme Store (Zustand)
 // ---------------------------------------------------------------------------
 
 import { create } from 'zustand';

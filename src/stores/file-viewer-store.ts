@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Global file viewer store
+// SafeClaw — Global file viewer store
 // ---------------------------------------------------------------------------
 
 import { create } from 'zustand';

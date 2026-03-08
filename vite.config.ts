@@ -12,10 +12,13 @@ export default defineConfig({
       devOptions: {
         enabled: true,
       },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8 MiB — WebLLM bundle is ~6 MiB
+      },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'OpenBrowserClaw',
-        short_name: 'OpenBrowserClaw',
+        name: 'SafeClaw',
+        short_name: 'SafeClaw',
         description: 'Browser-native personal AI assistant',
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',

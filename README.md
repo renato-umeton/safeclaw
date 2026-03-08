@@ -1,20 +1,47 @@
-# OpenBrowserClaw
+# SafeClaw
 
-> **Disclaimer:** OpenBrowserClaw is a personal, open-source project. It is **not** affiliated with any cryptocurrency, meme coin, token, or social media account. If you see coins, tokens, or social media profiles claiming association with this project, they are **not legitimate** and are not endorsed by the author(s). Stay safe and do your own research.
+> **SafeClaw** is a fork of [OpenBrowserClaw](https://github.com/nichochar/openbrowserclaw) by nichochar, with modifications limiting scope to Chrome and implementing a multi-LLM provider strategy.
 
-Browser-native personal AI assistant. Zero infrastructure — the browser is the server.
+> **Disclaimer:** SafeClaw is a personal, open-source project. It is **not** affiliated with any cryptocurrency, meme coin, token, or social media account. If you see coins, tokens, or social media profiles claiming association with this project, they are **not legitimate** and are not endorsed by the author(s). Stay safe and do your own research.
 
-Built as a browser-only reimagination of NanoClaw. Same philosophy, small enough to understand, built for one user, but running entirely in a browser tab.
+**Website:** [safeclaw.umeton.com](https://safeclaw.umeton.com)
+
+Browser-native personal AI assistant with multi-provider LLM support. Zero infrastructure — the browser is the server.
+
+## What's Different from OpenBrowserClaw?
+
+- **Multi-provider LLM support**: Anthropic Claude, Google Gemini, WebLLM (local Qwen3 models), and Chrome built-in AI (Gemini Nano)
+- **Quality-first routing**: Cloud models by default; local models activate when offline, rate-limited (429), or by user preference
+- **Chrome-focused**: Optimized for Chrome's capabilities (Origin Private File System, WebGPU, Chrome AI APIs)
+- **Rebranded identity**: SafeClaw as a distinct fork with its own direction
 
 ## Quick Start
 
 ```bash
-cd openbrowserclaw
+cd safeclaw
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`, paste your [Anthropic API key](https://console.anthropic.com/), and start chatting.
+Open `http://localhost:5173`, add your API key(s) in Settings, and start chatting.
+
+## Supported Providers
+
+| Provider | Type | Models | Tool Use |
+|----------|------|--------|----------|
+| **Anthropic** | Cloud API | Claude Opus 4.6, Sonnet 4.6, Haiku 4.5 | Yes |
+| **Google Gemini** | Cloud API | Gemini 2.5 Pro, 2.0 Flash | Yes |
+| **WebLLM** | Local (WebGPU) | Qwen3-4B, Qwen3-30B | Yes (parsed) |
+| **Chrome AI** | Local (built-in) | Gemini Nano | No (summarization only) |
+
+### Provider Routing (Design B)
+
+SafeClaw uses quality-first routing:
+
+1. **Default**: Your configured cloud provider (Anthropic or Gemini)
+2. **Offline** (`navigator.onLine === false`): Falls back to WebLLM if available
+3. **Rate-limited** (HTTP 429): Tries alternate cloud provider, then local
+4. **User override**: Manual provider/model selection in Settings
 
 ## Architecture
 
@@ -28,6 +55,7 @@ Open `http://localhost:5173`, paste your [Anthropic API key](https://console.ant
 │       └──────────────┼───────────────┘                   │
 │                      ▼                                   │
 │              Orchestrator (main thread)                  │
+│              ├── Provider Router (quality-first)         │
 │              ├── Message queue & routing                 │
 │              ├── State machine (idle/thinking/responding)│
 │              └── Task scheduler (cron)                   │
@@ -35,9 +63,15 @@ Open `http://localhost:5173`, paste your [Anthropic API key](https://console.ant
 │          ┌───────────┼───────────┐                       │
 │          ▼           ▼           ▼                       │
 │     IndexedDB      OPFS    Agent Worker                  │
-│     (messages,   (group    (Claude API                   │
+│     (messages,   (group    (LLM provider                 │
 │      tasks,       files,    tool-use loop,               │
-│      config)     memory)    WebVM sandbox)               │
+│      config)     memory)    multi-provider)              │
+│                                                          │
+│  Providers:                                              │
+│  ├── Anthropic Claude API                                │
+│  ├── Google Gemini API                                   │
+│  ├── WebLLM (Qwen3 via WebGPU)                           │
+│  └── Chrome AI (Gemini Nano, main thread)                │
 │                                                          │
 │  Channels:                                               │
 │  ├── Browser Chat (built-in)                             │
@@ -49,34 +83,22 @@ Open `http://localhost:5173`, paste your [Anthropic API key](https://console.ant
 
 | File | Purpose |
 |------|---------|
-| `src/index.ts` | Entry point, bootstraps UI |
 | `src/orchestrator.ts` | State machine, message routing, agent invocation |
-| `src/agent-worker.ts` | Web Worker: Claude API tool-use loop |
+| `src/agent-worker.ts` | Web Worker: LLM provider tool-use loop |
+| `src/providers/` | Provider abstraction layer (Anthropic, Gemini, WebLLM, Chrome AI) |
 | `src/tools.ts` | Tool definitions (bash, read/write files, fetch, etc.) |
-| `src/vm.ts` | WebVM wrapper (v86 Alpine Linux in WASM) |
 | `src/db.ts` | IndexedDB: messages, sessions, tasks, config |
 | `src/storage.ts` | OPFS: per-group file storage |
 | `src/router.ts` | Routes messages to correct channel |
-| `src/channels/browser-chat.ts` | In-browser chat channel |
-| `src/channels/telegram.ts` | Telegram Bot API channel |
+| `src/channels/` | Browser chat and Telegram channels |
 | `src/task-scheduler.ts` | Cron expression evaluation |
 | `src/crypto.ts` | AES-256-GCM encryption for stored credentials |
-| `src/ui/` | Chat, settings, and task manager components |
-
-## How It Works
-
-1. **You type a message** in the browser chat (or send one via Telegram)
-2. **The orchestrator** checks the trigger pattern, saves to IndexedDB, queues for processing
-3. **The agent worker** (a Web Worker) sends your message + conversation history to the Anthropic API
-4. **Claude responds**, possibly using tools (bash, file I/O, fetch, JavaScript)
-5. **Tool results** are fed back to Claude in a loop until it produces a final text response
-6. **The response** is routed back to the originating channel (browser chat or Telegram)
 
 ## Tools
 
 | Tool | What it does |
 |------|-------------|
-| `bash` | Execute shell commands in a sandboxed Linux VM (Alpine in WASM) |
+| `bash` | Execute shell commands in a lightweight bash emulator |
 | `javascript` | Execute JS code in an isolated scope (lighter than bash) |
 | `read_file` / `write_file` / `list_files` | Manage files in OPFS per-group workspace |
 | `fetch_url` | HTTP requests via browser `fetch()` (subject to CORS) |
@@ -88,46 +110,18 @@ Open `http://localhost:5173`, paste your [Anthropic API key](https://console.ant
 Optional. Works entirely via HTTPS — no WebSockets or special protocols.
 
 1. Create a bot with `@BotFather` on Telegram
-2. Open Settings in OpenBrowserClaw, paste the bot token
+2. Open Settings in SafeClaw, paste the bot token
 3. Send `/chatid` to your bot to get the chat ID
 4. Add the chat ID in Settings
 5. Messages from Telegram are processed the same as browser chat
 
-**Caveat**: The browser tab must be open for the bot to respond. Messages queue on Telegram's side and are processed when you reopen the tab.
-
-## WebVM (Optional)
-
-The `bash` tool runs commands in a v86-emulated Alpine Linux. To enable:
-
-1. Download the v86 WASM binary and Alpine rootfs image
-2. Place them in `public/assets/`:
-   - `public/assets/v86.wasm`
-   - `public/assets/v86/libv86.js`
-   - `public/assets/alpine-rootfs.ext2`
-3. The VM boots automatically on first use (~5-15 seconds)
-
-Without these assets, the `bash` tool returns a helpful error. All other tools work without the VM.
-
-## Comparison with NanoClaw
-
-| | NanoClaw | OpenBrowserClaw |
-|---|---|---|
-| Runtime | Node.js process | Browser tab |
-| Agent sandbox | Docker/Apple Container | Web Worker + WebVM |
-| Database | SQLite (better-sqlite3) | IndexedDB |
-| Files | Filesystem | OPFS |
-| Primary channel | WhatsApp | In-browser chat |
-| Other channels | Telegram, Discord | Telegram |
-| Agent SDK | Claude Agent SDK | Raw Anthropic API |
-| Background tasks | launchd service | setInterval (tab must be open) |
-| Deployment | Self-hosted server | Static files (any CDN) |
-| Dependencies | ~50 npm packages | 0 runtime deps |
+**Caveat**: The browser tab must be open for the bot to respond.
 
 ## Development
 
 ```bash
 npm run dev        # Vite dev server with HMR
-npm run build      # Production build → dist/
+npm run build      # Production build -> dist/
 npm run preview    # Preview production build
 npm run typecheck  # TypeScript type checking
 ```
@@ -144,7 +138,7 @@ No server needed. It's just HTML, CSS, and JS.
 
 ## Security
 
-OpenBrowserClaw is a proof of concept. All data stays in your browser, nothing is sent to any server except the Anthropic API. Here's an honest look at the current security posture:
+SafeClaw is a proof of concept. All data stays in your browser, nothing is sent to any server except the LLM provider APIs you configure. Here's an honest look at the current security posture:
 
 **What it does:**
 - API keys are encrypted at rest with AES-256-GCM using a non-extractable `CryptoKey` stored in IndexedDB. JavaScript cannot export the raw key material.
@@ -152,9 +146,13 @@ OpenBrowserClaw is a proof of concept. All data stays in your browser, nothing i
 - The agent runs in a Web Worker, separate from the UI thread.
 
 **What it doesn't do (yet):**
-- The encryption protects against casual inspection (DevTools, disk forensics) but not a full XSS attack on the same origin, an attacker with script execution could call the encrypt/decrypt API.
-- The `javascript` tool runs `eval()` in the Worker, which has access to `fetch()`. This means Claude can make arbitrary HTTP requests through the JS tool regardless of any `fetch_url` restrictions.
-- Outgoing HTTP requests (via `fetch_url` or the JS tool) have no user confirmation step.
+- The encryption protects against casual inspection (DevTools, disk forensics) but not a full XSS attack on the same origin.
+- The `javascript` tool runs `eval()` in the Worker, which has access to `fetch()`.
+- Outgoing HTTP requests have no user confirmation step.
 - The Telegram bot token is currently stored in plaintext.
 
-This is a single-user local tool, not a multi-tenant platform. Contributions to improve the security model are welcome.
+This is a single-user local tool, not a multi-tenant platform.
+
+## Acknowledgements
+
+SafeClaw is based on [OpenBrowserClaw](https://github.com/nichochar/openbrowserclaw) by nichochar, which itself is a browser-only reimagination of NanoClaw. We gratefully acknowledge the original project and its contributors.

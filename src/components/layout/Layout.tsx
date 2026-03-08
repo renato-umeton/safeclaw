@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Layout shell
+// SafeClaw — Layout shell
 // ---------------------------------------------------------------------------
 
 import { Outlet, NavLink } from 'react-router';
@@ -25,8 +25,8 @@ export function Layout() {
       <div className="navbar bg-base-200 border-b border-base-300 safe-area-top px-4 min-h-14">
         <div className="navbar-start">
           <span className="text-xl font-bold select-none flex items-center gap-1.5">
-            <span className="text-lg">🦀</span>
-            <span className="hidden sm:inline">OpenBrowserClaw</span>
+            <span className="text-lg">🛡️</span>
+            <span className="hidden sm:inline">SafeClaw</span>
           </span>
         </div>
 

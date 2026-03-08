@@ -1,8 +1,63 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — OPFS (Origin Private File System) helpers
+// SafeClaw — OPFS (Origin Private File System) helpers
 // ---------------------------------------------------------------------------
 
-import { OPFS_ROOT } from './config.js';
+import { OPFS_ROOT, LEGACY_OPFS_ROOT } from './config.js';
+
+/**
+ * Migrate OPFS data from legacy 'openbrowserclaw' root to 'safeclaw' root.
+ * Recursively copies all files, then removes the legacy root.
+ */
+export async function migrateFromLegacyOpfs(): Promise<void> {
+  try {
+    const root = await navigator.storage.getDirectory();
+
+    // Check if legacy root exists
+    let legacyDir: FileSystemDirectoryHandle;
+    try {
+      legacyDir = await root.getDirectoryHandle(LEGACY_OPFS_ROOT);
+    } catch {
+      return; // No legacy root — nothing to migrate
+    }
+
+    // Check if new root already exists
+    try {
+      await root.getDirectoryHandle(OPFS_ROOT);
+      // New root exists — just clean up legacy
+      await root.removeEntry(LEGACY_OPFS_ROOT, { recursive: true });
+      return;
+    } catch {
+      // New root doesn't exist — proceed with migration
+    }
+
+    console.log(`[SafeClaw] Migrating OPFS from '${LEGACY_OPFS_ROOT}' to '${OPFS_ROOT}'...`);
+
+    const newDir = await root.getDirectoryHandle(OPFS_ROOT, { create: true });
+    await copyDir(legacyDir, newDir);
+    await root.removeEntry(LEGACY_OPFS_ROOT, { recursive: true });
+
+    console.log('[SafeClaw] OPFS migration complete.');
+  } catch (err) {
+    console.warn('[SafeClaw] OPFS migration failed (non-fatal):', err);
+  }
+}
+
+async function copyDir(src: FileSystemDirectoryHandle, dst: FileSystemDirectoryHandle): Promise<void> {
+  for await (const [name, handle] of src.entries()) {
+    if (handle.kind === 'file') {
+      const file = await (handle as FileSystemFileHandle).getFile();
+      const content = await file.text();
+      const newFile = await dst.getFileHandle(name, { create: true });
+      const writable = await newFile.createWritable();
+      await writable.write(content);
+      await writable.close();
+    } else {
+      const srcSub = await src.getDirectoryHandle(name);
+      const dstSub = await dst.getDirectoryHandle(name, { create: true });
+      await copyDir(srcSub, dstSub);
+    }
+  }
+}
 
 /**
  * Get a handle to a nested directory, creating intermediate dirs.

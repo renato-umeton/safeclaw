@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Chat actions (Compact + New Session)
+// SafeClaw — Chat actions (Compact + New Session)
 // ---------------------------------------------------------------------------
 
 import { useState } from 'react';

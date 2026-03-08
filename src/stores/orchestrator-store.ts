@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Orchestrator Store (Zustand)
+// SafeClaw — Orchestrator Store (Zustand)
 // ---------------------------------------------------------------------------
 
 import { create } from 'zustand';

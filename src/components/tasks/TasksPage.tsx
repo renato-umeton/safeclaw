@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Tasks page
+// SafeClaw — Tasks page
 // ---------------------------------------------------------------------------
 
 import { useCallback, useEffect, useState } from 'react';

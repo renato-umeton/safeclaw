@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Web Crypto helpers for API key encryption
+// SafeClaw — Web Crypto helpers for API key encryption
 // ---------------------------------------------------------------------------
 //
 // Uses a non-extractable AES-256-GCM CryptoKey stored in a dedicated
@@ -7,12 +7,67 @@
 // only exposes encrypt/decrypt operations.
 // ---------------------------------------------------------------------------
 
-const KEYSTORE_DB = 'obc-keystore';
+const KEYSTORE_DB = 'sc-keystore';
+const LEGACY_KEYSTORE_DB = 'obc-keystore';
 const KEYSTORE_STORE = 'keys';
 const KEY_ID = 'api-key-encryption';
 const IV_LENGTH = 12;
 
-// ---- Internal: keystore database ------------------------------------------
+// ---- Internal: keystore migration & database ------------------------------
+
+/**
+ * Migrate the keystore from legacy 'obc-keystore' to 'sc-keystore'.
+ */
+export async function migrateKeystore(): Promise<void> {
+  const databases = await indexedDB.databases?.() || [];
+  const legacyExists = databases.some((d: any) => d.name === LEGACY_KEYSTORE_DB);
+  if (!legacyExists) return;
+
+  const newExists = databases.some((d: any) => d.name === KEYSTORE_DB);
+  if (newExists) {
+    try { indexedDB.deleteDatabase(LEGACY_KEYSTORE_DB); } catch { /* empty */ }
+    return;
+  }
+
+  console.log('[SafeClaw] Migrating keystore...');
+
+  const legacyDb = await new Promise<IDBDatabase>((resolve, reject) => {
+    const req = indexedDB.open(LEGACY_KEYSTORE_DB, 1);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+
+  // Read the existing key
+  const existingKey = await new Promise<CryptoKey | undefined>((resolve, reject) => {
+    const tx = legacyDb.transaction(KEYSTORE_STORE, 'readonly');
+    const req = tx.objectStore(KEYSTORE_STORE).get(KEY_ID);
+    req.onsuccess = () => resolve(req.result as CryptoKey | undefined);
+    req.onerror = () => reject(req.error);
+  });
+
+  legacyDb.close();
+
+  if (existingKey) {
+    // Write key to new keystore
+    const newDb = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open(KEYSTORE_DB, 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore(KEYSTORE_STORE); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const tx = newDb.transaction(KEYSTORE_STORE, 'readwrite');
+      tx.objectStore(KEYSTORE_STORE).put(existingKey, KEY_ID);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    newDb.close();
+  }
+
+  try { indexedDB.deleteDatabase(LEGACY_KEYSTORE_DB); } catch { /* empty */ }
+  console.log('[SafeClaw] Keystore migration complete.');
+}
 
 function openKeyStore(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

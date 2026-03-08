@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// OpenBrowserClaw — Typing indicator
+// SafeClaw — Typing indicator
 // ---------------------------------------------------------------------------
 
 export function TypingIndicator() {
