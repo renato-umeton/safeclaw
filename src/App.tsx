@@ -11,6 +11,7 @@ import { ChatPage } from './components/chat/ChatPage.js';
 import { FilesPage } from './components/files/FilesPage.js';
 import { TasksPage } from './components/tasks/TasksPage.js';
 import { SettingsPage } from './components/settings/SettingsPage.js';
+import { UseCasesPage } from './components/use-cases/UseCasesPage.js';
 
 export function App() {
   const orchRef = useRef<Orchestrator | null>(null);
@@ -76,6 +77,7 @@ export function App() {
           <Route path="files" element={<FilesPage />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="use-cases" element={<UseCasesPage />} />
           <Route path="*" element={<Navigate to="/chat" replace />} />
         </Route>
       </Routes>

@@ -14,6 +14,7 @@ import { decryptValue } from '../../crypto.js';
 import { getOrchestrator } from '../../stores/orchestrator-store.js';
 import { useThemeStore, type ThemeChoice } from '../../stores/theme-store.js';
 import type { ProviderId, LocalPreference } from '../../providers/types.js';
+import { ProfileSection } from './ProfileSection.js';
 
 // ---------------------------------------------------------------------------
 // Provider / model definitions
@@ -433,6 +434,9 @@ export function SettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* ---- Profile ---- */}
+      <ProfileSection />
 
       {/* ---- Telegram ---- */}
       <div className="card card-bordered bg-base-200">
