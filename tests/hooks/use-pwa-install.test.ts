@@ -14,9 +14,11 @@ beforeAll(async () => {
 
 describe('usePwaInstall', () => {
   let originalUserAgent: string;
+  let originalMatchMedia: typeof window.matchMedia;
 
   beforeEach(() => {
     originalUserAgent = navigator.userAgent;
+    originalMatchMedia = window.matchMedia;
   });
 
   afterEach(() => {
@@ -33,12 +35,39 @@ describe('usePwaInstall', () => {
         configurable: true,
       });
     }
+    window.matchMedia = originalMatchMedia;
   });
 
-  it('starts with canInstall false and no platform', () => {
+  it('starts with canInstall false and showBanner true on desktop Chrome UA', () => {
+    // Default happy-dom UA is not iOS and not standalone, so showBanner = true
     const { result } = renderHook(() => usePwaInstall());
     expect(result.current.canInstall).toBe(false);
-    expect(result.current.platform).toBeNull();
+    expect(result.current.showBanner).toBe(true);
+  });
+
+  it('detects unsupported platform for Firefox user agent', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/119.0',
+      writable: true,
+      configurable: true,
+    });
+
+    const { result } = renderHook(() => usePwaInstall());
+    expect(result.current.platform).toBe('unsupported');
+    expect(result.current.showBanner).toBe(true);
+    expect(result.current.canInstall).toBe(false);
+  });
+
+  it('detects unsupported platform for Safari on macOS', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+      writable: true,
+      configurable: true,
+    });
+
+    const { result } = renderHook(() => usePwaInstall());
+    expect(result.current.platform).toBe('unsupported');
+    expect(result.current.showBanner).toBe(true);
   });
 
   it('captures beforeinstallprompt event on Chromium browsers', () => {
@@ -57,6 +86,7 @@ describe('usePwaInstall', () => {
 
     expect(result.current.canInstall).toBe(true);
     expect(result.current.platform).toBe('chromium');
+    expect(result.current.showBanner).toBe(true);
   });
 
   it('detects iOS Safari when navigator.standalone is undefined and UA matches iPhone', () => {
@@ -79,6 +109,7 @@ describe('usePwaInstall', () => {
     // and the iOS user agent pattern
     expect(result.current.platform).toBe('ios');
     expect(result.current.canInstall).toBe(true);
+    expect(result.current.showBanner).toBe(true);
   });
 
   it('detects iOS Safari with iPad user agent', () => {
@@ -96,6 +127,7 @@ describe('usePwaInstall', () => {
     const { result } = renderHook(() => usePwaInstall());
     expect(result.current.platform).toBe('ios');
     expect(result.current.canInstall).toBe(true);
+    expect(result.current.showBanner).toBe(true);
   });
 
   it('does not show install on iOS when already in standalone mode', () => {
@@ -113,6 +145,23 @@ describe('usePwaInstall', () => {
     const { result } = renderHook(() => usePwaInstall());
     // Already installed — should not show install prompt
     expect(result.current.canInstall).toBe(false);
+    expect(result.current.showBanner).toBe(false);
+  });
+
+  it('hides banner when running in standalone display mode', () => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(display-mode: standalone)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const { result } = renderHook(() => usePwaInstall());
+    expect(result.current.showBanner).toBe(false);
   });
 
   it('promptInstall calls the deferred prompt on Chromium', async () => {
@@ -169,7 +218,7 @@ describe('usePwaInstall', () => {
     expect(result.current.canInstall).toBe(false);
   });
 
-  it('dismiss sets canInstall to false', () => {
+  it('dismiss sets canInstall to false and showBanner to false', () => {
     const { result } = renderHook(() => usePwaInstall());
 
     const mockPrompt = vi.fn().mockResolvedValue({ outcome: 'accepted' });
@@ -182,11 +231,13 @@ describe('usePwaInstall', () => {
       window.dispatchEvent(event);
     });
     expect(result.current.canInstall).toBe(true);
+    expect(result.current.showBanner).toBe(true);
 
     act(() => {
       result.current.dismiss();
     });
     expect(result.current.canInstall).toBe(false);
+    expect(result.current.showBanner).toBe(false);
   });
 
   it('cleans up event listener on unmount', () => {
