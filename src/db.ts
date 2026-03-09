@@ -2,8 +2,8 @@
 // SafeClaw — IndexedDB database layer
 // ---------------------------------------------------------------------------
 
-import { DB_NAME, DB_VERSION, LEGACY_DB_NAME } from './config.js';
-import type { StoredMessage, Task, ConfigEntry, Session, ConversationMessage } from './types.js';
+import { DB_NAME, DB_VERSION, LEGACY_DB_NAME, CONFIG_KEYS } from './config.js';
+import type { StoredMessage, Task, ConfigEntry, Session, ConversationMessage, UserProfile } from './types.js';
 
 let db: IDBDatabase | null = null;
 
@@ -340,6 +340,24 @@ export function deleteConfig(key: string): Promise<void> {
   return txPromise('config', 'readwrite', (store) =>
     store.delete(key),
   ).then(() => undefined);
+}
+
+// ---------------------------------------------------------------------------
+// User Profile
+// ---------------------------------------------------------------------------
+
+export async function saveUserProfile(profile: UserProfile): Promise<void> {
+  await setConfig(CONFIG_KEYS.USER_PROFILE, JSON.stringify(profile));
+}
+
+export async function getUserProfile(): Promise<UserProfile | null> {
+  const raw = await getConfig(CONFIG_KEYS.USER_PROFILE);
+  if (!raw) return null;
+  return JSON.parse(raw) as UserProfile;
+}
+
+export async function clearUserProfile(): Promise<void> {
+  await deleteConfig(CONFIG_KEYS.USER_PROFILE);
 }
 
 export function getAllConfig(): Promise<ConfigEntry[]> {

@@ -137,6 +137,36 @@ export interface ToolDefinition {
   };
 }
 
+/** Use-case difficulty levels */
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+
+/** A curated use case */
+export interface UseCase {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+  difficulty: Difficulty;
+}
+
+/** A use case with a relevance score */
+export interface ScoredUseCase extends UseCase {
+  score: number;
+}
+
+/** User profile for personalization */
+export interface UserProfile {
+  resumeText: string;
+  socialLinks: {
+    linkedin: string;
+    instagram: string;
+    github: string;
+    twitter: string;
+    reddit: string;
+  };
+}
+
 /** Orchestrator state machine */
 export type OrchestratorState = 'idle' | 'thinking' | 'responding';
 

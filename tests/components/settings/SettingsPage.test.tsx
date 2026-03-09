@@ -53,6 +53,9 @@ vi.mock('../../../src/db', () => ({
   getConfig: vi.fn().mockResolvedValue(null),
   openDatabase: vi.fn().mockResolvedValue(undefined),
   getRecentMessages: vi.fn().mockResolvedValue([]),
+  getUserProfile: vi.fn().mockResolvedValue(null),
+  saveUserProfile: vi.fn().mockResolvedValue(undefined),
+  clearUserProfile: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock crypto
@@ -84,6 +87,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('API Keys')).toBeInTheDocument();
     expect(screen.getByText('Local Models')).toBeInTheDocument();
     expect(screen.getByText('Assistant Name')).toBeInTheDocument();
+    expect(screen.getByText('Your Profile')).toBeInTheDocument();
     expect(screen.getByText('Telegram Bot')).toBeInTheDocument();
     expect(screen.getByText('Storage')).toBeInTheDocument();
   });
