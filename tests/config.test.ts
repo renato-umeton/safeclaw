@@ -21,6 +21,8 @@ import {
   DEFAULT_GROUP_ID,
   DEFAULT_PROVIDER,
   CONFIG_KEYS,
+  APP_URL,
+  WEBSITE_URL,
 } from '../src/config';
 
 describe('config constants', () => {
@@ -42,6 +44,11 @@ describe('config constants', () => {
     expect(ANTHROPIC_API_URL).toContain('api.anthropic.com');
     expect(ANTHROPIC_API_VERSION).toBe('2023-06-01');
     expect(TELEGRAM_API_BASE).toContain('api.telegram.org');
+  });
+
+  it('has valid deployment URLs', () => {
+    expect(APP_URL).toBe('https://app-safeclaw.umeton.com');
+    expect(WEBSITE_URL).toBe('https://safeclaw.umeton.com');
   });
 
   it('has sensible Telegram constants', () => {

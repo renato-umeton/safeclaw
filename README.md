@@ -4,9 +4,9 @@
 
 > **Disclaimer:** SafeClaw is a personal, open-source project. It is **not** affiliated with any cryptocurrency, meme coin, token, or social media account. If you see coins, tokens, or social media profiles claiming association with this project, they are **not legitimate** and are not endorsed by the author(s). Stay safe and do your own research.
 
-**Website:** [safeclaw.umeton.com](https://safeclaw.umeton.com)
+**Website:** [safeclaw.umeton.com](https://safeclaw.umeton.com) | **App:** [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com)
 
-Browser-native personal AI assistant with multi-provider LLM support. Zero infrastructure — the browser is the server.
+Browser-native personal AI assistant with multi-provider LLM support. Zero infrastructure — the browser is the server. Installable as a PWA on any device.
 
 ## What's Different from OpenBrowserClaw?
 
@@ -15,7 +15,11 @@ Browser-native personal AI assistant with multi-provider LLM support. Zero infra
 - **Chrome-focused**: Optimized for Chrome's capabilities (Origin Private File System, WebGPU, Chrome AI APIs)
 - **Rebranded identity**: SafeClaw as a distinct fork with its own direction
 
-## Quick Start
+## Try It Now
+
+Visit [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com) to use SafeClaw instantly in your browser — no installation required. On mobile, use your browser's "Add to Home Screen" to install it as a PWA.
+
+## Quick Start (Development)
 
 ```bash
 cd safeclaw
@@ -157,6 +161,10 @@ npm run test:coverage  # Run tests with coverage report (must be >90%)
 ```
 
 ## Deploy
+
+The hosted app is available at [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com).
+
+To self-host:
 
 ```bash
 npm run build
