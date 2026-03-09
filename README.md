@@ -105,6 +105,27 @@ SafeClaw uses quality-first routing:
 | `update_memory` | Persist context to CLAUDE.md (loaded on every conversation) |
 | `create_task` | Schedule recurring tasks with cron expressions |
 
+## Example Workflows
+
+SafeClaw supports a wide range of personal AI workflows. Here are some top examples — sourced from [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases):
+
+| Category | Workflow | Description |
+|----------|----------|-------------|
+| **Productivity** | Daily News Digest | Aggregate and summarize tech news from multiple sources into a curated daily briefing |
+| **Productivity** | Inbox De-clutter | Summarize newsletters and send a condensed digest via email |
+| **Productivity** | Personal CRM | Automatically discover and track contacts from email and calendar |
+| **Productivity** | Meeting Notes & Action Items | Convert meeting transcripts into structured summaries with automatic task creation |
+| **Creative** | Content Pipeline | Automate idea scouting, research, and content tracking for video or blog production |
+| **Creative** | Podcast Production | Automate guest research, outlines, show notes, and promotional assets |
+| **Research** | Personal Knowledge Base (RAG) | Build a searchable knowledge base from URLs, tweets, and articles |
+| **Research** | Pre-Build Idea Validator | Scan GitHub, HN, npm, PyPI, and Product Hunt before building a new project |
+| **Automation** | Health & Symptom Tracker | Track food intake and symptoms to identify triggers with scheduled reminders |
+| **Automation** | Habit Tracker & Coach | Daily check-ins tracking habits with adaptive tone and accountability |
+| **Social** | Reddit/YouTube Digest | Summarize curated digests from favorite subreddits or YouTube channels |
+| **DevOps** | Self-Healing Home Server | Always-on infrastructure agent with SSH access, cron jobs, and self-healing capabilities |
+
+For the full list of 40+ use cases, see the [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) repository.
+
 ## Telegram
 
 Optional. Works entirely via HTTPS — no WebSockets or special protocols.

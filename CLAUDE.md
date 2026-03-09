@@ -4,7 +4,7 @@ This file orients AI agents contributing to SafeClaw. Read it before writing any
 
 ## Project Overview
 
-SafeClaw is a browser-native personal AI assistant. Zero server infrastructure — the browser is the server. It uses React, TypeScript, Vite, TailwindCSS/DaisyUI, and Zustand for state management.
+SafeClaw is a browser-native personal AI assistant. Zero server infrastructure — the browser is the server. It uses React, TypeScript, Vite, TailwindCSS/DaisyUI, and Zustand for state management. The project includes curated example workflows (sourced from [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases)) showcased on the website and in the README.
 
 ## Repository Layout
 
