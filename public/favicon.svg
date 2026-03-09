@@ -1,4 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="24" fill="#1a1a2e"/>
-  <text x="64" y="85" text-anchor="middle" font-size="72">🦀</text>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+    <linearGradient id="claw" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#7b68ee"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#00d2ff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#7b68ee" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+  <!-- Subtle shield shape -->
+  <path d="M64 18 L98 32 L98 62 Q98 90 64 110 Q30 90 30 62 L30 32 Z"
+        fill="url(#shield)" stroke="url(#claw)" stroke-width="1.5" stroke-opacity="0.3"/>
+  <!-- Crab claw - left pincer -->
+  <path d="M38 52 Q28 42 32 32 Q36 28 40 32 Q44 36 42 44 L50 48"
+        fill="none" stroke="url(#claw)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Crab claw - right pincer -->
+  <path d="M90 52 Q100 42 96 32 Q92 28 88 32 Q84 36 86 44 L78 48"
+        fill="none" stroke="url(#claw)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Crab body -->
+  <ellipse cx="64" cy="62" rx="22" ry="16" fill="url(#claw)" opacity="0.9"/>
+  <!-- Eyes -->
+  <circle cx="56" cy="54" r="3" fill="#1a1a2e"/>
+  <circle cx="72" cy="54" r="3" fill="#1a1a2e"/>
+  <circle cx="57" cy="53" r="1" fill="#fff"/>
+  <circle cx="73" cy="53" r="1" fill="#fff"/>
+  <!-- Legs - left -->
+  <path d="M44 60 L30 68" fill="none" stroke="url(#claw)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M44 66 L28 78" fill="none" stroke="url(#claw)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M46 72 L32 88" fill="none" stroke="url(#claw)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Legs - right -->
+  <path d="M84 60 L98 68" fill="none" stroke="url(#claw)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M84 66 L100 78" fill="none" stroke="url(#claw)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M82 72 L96 88" fill="none" stroke="url(#claw)" stroke-width="3" stroke-linecap="round"/>
 </svg>
