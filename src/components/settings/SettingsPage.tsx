@@ -15,6 +15,7 @@ import { getOrchestrator, useOrchestratorStore } from '../../stores/orchestrator
 import { useThemeStore, type ThemeChoice } from '../../stores/theme-store.js';
 import type { ProviderId, LocalPreference } from '../../providers/types.js';
 import { ProfileSection } from './ProfileSection.js';
+import { VersionSection } from './VersionSection.js';
 
 // ---------------------------------------------------------------------------
 // Provider / model definitions
@@ -540,6 +541,9 @@ export function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* ---- Version ---- */}
+      <VersionSection />
     </div>
   );
 }

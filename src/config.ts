@@ -2,6 +2,9 @@
 // SafeClaw — Configuration constants
 // ---------------------------------------------------------------------------
 
+/** Application version (injected at build time from package.json) */
+export const APP_VERSION: string = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
+
 /** Default assistant name (used in trigger pattern) */
 export const ASSISTANT_NAME = 'Andy';
 

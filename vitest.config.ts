@@ -2,6 +2,9 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify('2.0.0'),
+  },
   resolve: {
     alias: {
       './storage.js': path.resolve(__dirname, 'src/storage.ts'),
@@ -37,6 +40,9 @@ export default defineConfig({
       '../../hooks/use-pwa-update.js': path.resolve(__dirname, 'src/hooks/use-pwa-update.ts'),
       '../pwa/InstallBanner.js': path.resolve(__dirname, 'src/components/pwa/InstallBanner.tsx'),
       '../pwa/UpdateToast.js': path.resolve(__dirname, 'src/components/pwa/UpdateToast.tsx'),
+      './VersionSection.js': path.resolve(__dirname, 'src/components/settings/VersionSection.tsx'),
+      '../../version-checker.js': path.resolve(__dirname, 'src/version-checker.ts'),
+      './version-checker.js': path.resolve(__dirname, 'src/version-checker.ts'),
       'virtual:pwa-register': path.resolve(__dirname, 'tests/mocks/virtual-pwa-register.ts'),
     },
   },

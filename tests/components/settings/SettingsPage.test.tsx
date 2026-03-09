@@ -76,6 +76,11 @@ vi.mock('../../../src/crypto', () => ({
   decryptValue: vi.fn().mockResolvedValue(''),
 }));
 
+// Mock VersionSection to avoid fetch calls in SettingsPage tests
+vi.mock('../../../src/components/settings/VersionSection', () => ({
+  VersionSection: () => <div data-testid="version-section">Version</div>,
+}));
+
 describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,6 +111,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Your Profile')).toBeInTheDocument();
     expect(screen.getByText('Telegram Bot')).toBeInTheDocument();
     expect(screen.getByText('Storage')).toBeInTheDocument();
+    expect(screen.getByText('Version')).toBeInTheDocument();
   });
 
   // ---- Theme selection ----
