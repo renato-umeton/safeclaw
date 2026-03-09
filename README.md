@@ -164,7 +164,20 @@ npm run test:coverage  # Run tests with coverage report (must be >90%)
 
 The hosted app is available at [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com).
 
-To self-host:
+### Automated Releases
+
+Pushing a version tag triggers a GitHub Actions workflow that builds, tests, and publishes a release:
+
+```bash
+git tag v2.1.0
+git push origin v2.1.0
+```
+
+The workflow runs the test suite, builds the project, and creates a GitHub Release with `safeclaw-<version>.zip` attached. Download the latest release from the [Releases page](https://github.com/renato-umeton/safeclaw/releases).
+
+### Self-Hosting
+
+To self-host, download the release zip and extract it to any static host, or build from source:
 
 ```bash
 npm run build

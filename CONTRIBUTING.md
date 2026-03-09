@@ -176,6 +176,34 @@ Before submitting your PR, verify:
 - [ ] No new `any` types without justification in a comment
 - [ ] Changes are focused and minimal — no unrelated refactors
 
+## Releases
+
+SafeClaw uses a GitHub Actions workflow to automate releases. You don't need to build and upload artifacts manually.
+
+**How it works:**
+
+1. Update the version in `package.json`
+2. Commit the change and push to `master`
+3. Create and push a version tag:
+
+```bash
+git tag v2.1.0
+git push origin v2.1.0
+```
+
+The CI workflow will automatically:
+- Run the full test suite with coverage
+- Build the production bundle (`npm run build`)
+- Zip the `dist/` output
+- Create a GitHub Release with the zip attached
+
+The release asset is then downloadable at:
+```
+https://github.com/renato-umeton/safeclaw/releases/download/v2.1.0/safeclaw-2.1.0.zip
+```
+
+**Do not commit build artifacts** (zips, dist folders) to the repository. Binary files belong in GitHub Releases.
+
 ## Example Workflows
 
 SafeClaw showcases curated example workflows on the website and in the README, sourced from [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases). When adding new examples, keep descriptions concise (one sentence) and ensure proper attribution to the source repository.
