@@ -30,10 +30,13 @@ src/
   channels/              # Message channels (browser-chat, telegram)
   components/            # React UI components
   stores/                # Zustand state stores
+  version-check.ts       # Semver bump detection & release doc enforcement
 tests/
   setup.ts               # Global test setup (polyfills, mocks)
   helpers.ts             # Shared test helpers (mock OPFS, etc.)
   **/*.test.{ts,tsx}     # Test files mirror src/ structure
+scripts/
+  check-version-docs.sh  # CI script: enforces doc updates on minor/major bumps
 ```
 
 ## Commands
@@ -155,6 +158,25 @@ it('renders the component and responds to interaction', async () => {
 - Functional style preferred; classes used for provider implementations.
 - Use existing patterns from the codebase — read neighboring files before writing new code.
 
+## Release Documentation (Mandatory)
+
+Minor and major version bumps require updates to **all four** of these files to reflect the new code and functionalities being released:
+
+- `CLAUDE.md`
+- `CONTRIBUTING.md`
+- `README.md`
+- `docs/website/index.html`
+
+Patch releases (bug fixes only) do not require documentation updates.
+
+This is enforced by the `Version Docs Check` GitHub Actions workflow (`.github/workflows/version-docs.yml`), which runs `scripts/check-version-docs.sh` on every PR to `main`. The check compares `package.json` version against `origin/main` and fails the PR if any required doc file is missing from the diff.
+
+You can run the check locally before pushing:
+
+```bash
+bash scripts/check-version-docs.sh main
+```
+
 ## Pull Request Checklist
 
 1. Tests written **before** implementation (TDD)
@@ -162,3 +184,4 @@ it('renders the component and responds to interaction', async () => {
 3. `npm run test:coverage` shows all metrics >= 90%
 4. `npm run typecheck` passes
 5. No new `any` types without justification
+6. If minor/major version bump: all four release doc files updated (see above)
