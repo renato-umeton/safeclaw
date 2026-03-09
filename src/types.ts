@@ -70,7 +70,8 @@ export interface Channel {
 export type WorkerInbound =
   | { type: 'invoke'; payload: InvokePayload }
   | { type: 'cancel'; payload: { groupId: string } }
-  | { type: 'compact'; payload: CompactPayload };
+  | { type: 'compact'; payload: CompactPayload }
+  | { type: 'preload'; payload: { providerConfig: WorkerProviderConfig } };
 
 export interface CompactPayload {
   groupId: string;

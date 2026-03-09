@@ -70,11 +70,35 @@ self.onmessage = async (event: MessageEvent<WorkerInbound>) => {
     case 'compact':
       await handleCompact(payload as CompactPayload);
       break;
+    case 'preload':
+      await handlePreload(payload as { providerConfig: WorkerProviderConfig });
+      break;
     case 'cancel':
       // TODO: AbortController-based cancellation
       break;
   }
 };
+
+// ---------------------------------------------------------------------------
+// Model preloading — download and cache without invoking the LLM
+// ---------------------------------------------------------------------------
+
+async function handlePreload(payload: { providerConfig: WorkerProviderConfig }): Promise<void> {
+  const { providerConfig } = payload;
+  try {
+    const provider = getOrCreateProvider(providerConfig);
+    // Trigger model download by calling chat with a minimal request.
+    // The WebLLM provider's ensureModel() runs on the first chat() call.
+    await provider.chat({
+      model: providerConfig.model,
+      maxTokens: 1,
+      system: 'Reply OK',
+      messages: [{ role: 'user', content: 'ping' }],
+    });
+  } catch {
+    // Preload is best-effort — download progress is still emitted
+  }
+}
 
 // Shell emulator needs no boot — it's pure JS over OPFS
 

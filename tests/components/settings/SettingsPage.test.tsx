@@ -8,27 +8,40 @@ const mockSetModel = vi.fn().mockResolvedValue(undefined);
 const mockSetLocalPreference = vi.fn().mockResolvedValue(undefined);
 const mockSetAssistantName = vi.fn().mockResolvedValue(undefined);
 const mockConfigureTelegram = vi.fn().mockResolvedValue(undefined);
+const mockPreloadModel = vi.fn().mockResolvedValue(undefined);
+
+let mockProviderId = 'anthropic';
+let mockModel = 'claude-sonnet-4-6';
+let mockWebllmProgress: any = null;
 
 vi.mock('../../../src/stores/orchestrator-store', () => ({
   useOrchestratorStore: vi.fn((selector) => {
     const state = {
       ready: true,
       state: 'idle',
+      webllmProgress: mockWebllmProgress,
     };
     return selector ? selector(state) : state;
   }),
   getOrchestrator: vi.fn(() => ({
-    getProviderId: () => 'anthropic',
+    getProviderId: () => mockProviderId,
     getApiKey: (p: string) => '',
-    getModel: () => 'claude-sonnet-4-6',
+    getModel: () => mockModel,
     getLocalPreference: () => 'offline-only',
     getAssistantName: () => 'Andy',
     setApiKey: mockSetApiKey,
-    setProviderId: mockSetProviderId,
-    setModel: mockSetModel,
+    setProviderId: (...args: any[]) => {
+      mockProviderId = args[0];
+      return mockSetProviderId(...args);
+    },
+    setModel: (...args: any[]) => {
+      mockModel = args[0];
+      return mockSetModel(...args);
+    },
     setLocalPreference: mockSetLocalPreference,
     setAssistantName: mockSetAssistantName,
     configureTelegram: mockConfigureTelegram,
+    preloadModel: mockPreloadModel,
     telegram: { isConfigured: () => false },
   })),
 }));
@@ -67,6 +80,9 @@ describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockProviderId = 'anthropic';
+    mockModel = 'claude-sonnet-4-6';
+    mockWebllmProgress = null;
   });
 
   afterEach(() => {
@@ -606,5 +622,48 @@ describe('SettingsPage', () => {
     });
 
     expect(screen.queryByText('Persistent storage active')).toBeNull();
+  });
+
+  // ---- Model pre-download ----
+
+  it('shows Download Model button when webllm provider is selected', async () => {
+    mockProviderId = 'webllm';
+    mockModel = 'qwen3-4b';
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+    expect(screen.getByText('Download Model')).toBeInTheDocument();
+  });
+
+  it('does not show Download Model button for cloud providers', () => {
+    mockProviderId = 'anthropic';
+    render(<SettingsPage />);
+    expect(screen.queryByText('Download Model')).toBeNull();
+  });
+
+  it('calls preloadModel when Download Model button is clicked', async () => {
+    mockProviderId = 'webllm';
+    mockModel = 'qwen3-4b';
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Download Model'));
+    });
+
+    expect(mockPreloadModel).toHaveBeenCalled();
+  });
+
+  it('shows download progress bar in settings when webllmProgress is set', async () => {
+    mockProviderId = 'webllm';
+    mockModel = 'qwen3-4b';
+    mockWebllmProgress = { model: 'qwen3-4b', progress: 60, status: 'Downloading...' };
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+    expect(screen.getByText(/Downloading/)).toBeInTheDocument();
+    // Multiple progressbars exist (storage + model download)
+    expect(screen.getAllByRole('progressbar').length).toBeGreaterThanOrEqual(2);
   });
 });

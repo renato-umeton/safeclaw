@@ -13,6 +13,12 @@ import type { Orchestrator } from '../orchestrator.js';
 import { DEFAULT_GROUP_ID } from '../config.js';
 import { getRecentMessages } from '../db.js';
 
+interface WebLLMProgress {
+  model: string;
+  progress: number;
+  status: string;
+}
+
 interface OrchestratorStoreState {
   // --- reactive state ---
   messages: StoredMessage[];
@@ -24,6 +30,7 @@ interface OrchestratorStoreState {
   error: string | null;
   activeGroupId: string;
   ready: boolean;
+  webllmProgress: WebLLMProgress | null;
 
   // --- actions ---
   sendMessage: (text: string) => void;
@@ -50,6 +57,7 @@ export const useOrchestratorStore = create<OrchestratorStoreState>((set, get) =>
   error: null,
   activeGroupId: DEFAULT_GROUP_ID,
   ready: false,
+  webllmProgress: null,
 
   sendMessage: (text) => {
     const orch = getOrchestrator();
@@ -135,6 +143,15 @@ export async function initOrchestratorStore(orch: Orchestrator): Promise<void> {
 
   orch.events.on('token-usage', (usage) => {
     store.setState({ tokenUsage: usage });
+  });
+
+  orch.events.on('webllm-progress', (progress) => {
+    // progress.progress === 1 means "Finished" — clear the bar
+    if (progress.progress === 1) {
+      store.setState({ webllmProgress: null });
+    } else {
+      store.setState({ webllmProgress: progress });
+    }
   });
 
   orch.events.on('ready', () => {

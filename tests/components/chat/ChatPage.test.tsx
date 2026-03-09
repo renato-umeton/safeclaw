@@ -14,6 +14,7 @@ const defaultState = {
   state: 'idle',
   tokenUsage: null,
   error: null,
+  webllmProgress: null,
   sendMessage: mockSendMessage,
   newSession: vi.fn(),
   compactContext: vi.fn(),
@@ -147,5 +148,21 @@ describe('ChatPage', () => {
   it('calls loadHistory on mount', () => {
     render(<ChatPage />);
     expect(mockLoadHistory).toHaveBeenCalled();
+  });
+
+  it('shows model download progress when webllmProgress is set', () => {
+    currentState = {
+      ...defaultState,
+      webllmProgress: { model: 'qwen3-4b', progress: 45, status: 'Downloading model...' },
+    };
+    render(<ChatPage />);
+    expect(screen.getByText(/Downloading model/)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('does not show model download progress when webllmProgress is null', () => {
+    currentState = { ...defaultState, webllmProgress: null };
+    render(<ChatPage />);
+    expect(screen.queryByText(/Downloading model/)).toBeNull();
   });
 });

@@ -211,10 +211,14 @@ export class Orchestrator {
   }
 
   /**
-   * Check if at least one provider is configured with an API key.
+   * Check if at least one provider is usable — either a cloud API key is set,
+   * or local mode is enabled (local preference "always" or a local provider selected).
    */
   isConfigured(): boolean {
-    return !!(this.apiKeys.anthropic || this.apiKeys.gemini);
+    const hasCloudKey = !!(this.apiKeys.anthropic || this.apiKeys.gemini);
+    const isLocalProvider = this.providerId === 'webllm' || this.providerId === 'chrome-ai';
+    const localAlways = this.localPreference === 'always';
+    return hasCloudKey || isLocalProvider || localAlways;
   }
 
   /**
@@ -306,6 +310,17 @@ export class Orchestrator {
     this.telegram.configure(token, chatIds);
     this.telegram.onMessage((msg) => this.enqueue(msg));
     this.telegram.start();
+  }
+
+  /**
+   * Pre-download and cache the currently selected local model.
+   * Triggers progress events via the webllm-progress event.
+   */
+  preloadModel(): void {
+    this.agentWorker.postMessage({
+      type: 'preload',
+      payload: { providerConfig: this.buildProviderConfig() },
+    });
   }
 
   /**
