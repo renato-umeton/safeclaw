@@ -53,9 +53,20 @@ export function extractKeywords(profile: UserProfile): string[] {
  * Score a single use case against a set of keywords.
  */
 export function scoreUseCase(useCase: UseCase, keywords: string[]): number {
-  if (keywords.length === 0) return 0;
+  return scoreUseCaseDetailed(useCase, keywords).score;
+}
+
+/**
+ * Score a single use case and return which keywords matched.
+ */
+export function scoreUseCaseDetailed(
+  useCase: UseCase,
+  keywords: string[],
+): { score: number; matchedKeywords: string[] } {
+  if (keywords.length === 0) return { score: 0, matchedKeywords: [] };
 
   let score = 0;
+  const matched = new Set<string>();
   const descWords = useCase.description.toLowerCase().split(/[^a-z0-9]+/);
   const tagSet = new Set(useCase.tags.map((t) => t.toLowerCase()));
 
@@ -63,21 +74,24 @@ export function scoreUseCase(useCase: UseCase, keywords: string[]): number {
     // Tag matches are weighted higher
     if (tagSet.has(kw)) {
       score += TAG_MATCH_WEIGHT;
+      matched.add(kw);
     }
     // Check if keyword appears in any tag (partial match)
     for (const tag of tagSet) {
       if (tag !== kw && tag.includes(kw)) {
         score += TAG_MATCH_WEIGHT;
+        matched.add(kw);
         break;
       }
     }
     // Description word matches
     if (descWords.includes(kw)) {
       score += DESC_MATCH_WEIGHT;
+      matched.add(kw);
     }
   }
 
-  return score;
+  return { score, matchedKeywords: [...matched] };
 }
 
 /**
@@ -88,12 +102,23 @@ export function getRecommendations(
   profile: UserProfile | null,
   limit?: number,
 ): ScoredUseCase[] {
+  return getRecommendationsWithReasons(useCases, profile, limit);
+}
+
+/**
+ * Rank use cases by relevance with matched keywords explaining WHY.
+ */
+export function getRecommendationsWithReasons(
+  useCases: UseCase[],
+  profile: UserProfile | null,
+  limit?: number,
+): ScoredUseCase[] {
   const keywords = profile ? extractKeywords(profile) : [];
 
-  const scored: ScoredUseCase[] = useCases.map((uc) => ({
-    ...uc,
-    score: scoreUseCase(uc, keywords),
-  }));
+  const scored: ScoredUseCase[] = useCases.map((uc) => {
+    const { score, matchedKeywords } = scoreUseCaseDetailed(uc, keywords);
+    return { ...uc, score, matchedKeywords };
+  });
 
   scored.sort((a, b) => b.score - a.score);
 

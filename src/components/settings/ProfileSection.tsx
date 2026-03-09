@@ -2,8 +2,8 @@
 // SafeClaw — Profile section for settings
 // ---------------------------------------------------------------------------
 
-import { useEffect, useState } from 'react';
-import { User, Check } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { User, Check, Upload, FileText } from 'lucide-react';
 import { getUserProfile, saveUserProfile, clearUserProfile } from '../../db.js';
 import type { UserProfile } from '../../types.js';
 
@@ -11,13 +11,16 @@ const EMPTY_LINKS = { linkedin: '', instagram: '', github: '', twitter: '', redd
 
 export function ProfileSection() {
   const [resumeText, setResumeText] = useState('');
+  const [cvFileName, setCvFileName] = useState('');
   const [socialLinks, setSocialLinks] = useState({ ...EMPTY_LINKS });
   const [saved, setSaved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getUserProfile().then((profile) => {
       if (profile) {
         setResumeText(profile.resumeText);
+        setCvFileName(profile.cvFileName || '');
         setSocialLinks(profile.socialLinks);
       }
     });
@@ -27,8 +30,21 @@ export function ProfileSection() {
     setSocialLinks((prev) => ({ ...prev, [platform]: value }));
   }
 
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      setResumeText(text);
+      setCvFileName(file.name);
+    };
+    reader.readAsText(file);
+  }
+
   async function handleSave() {
-    const profile: UserProfile = { resumeText, socialLinks };
+    const profile: UserProfile = { resumeText, cvFileName, socialLinks };
     await saveUserProfile(profile);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -37,6 +53,7 @@ export function ProfileSection() {
   async function handleClear() {
     await clearUserProfile();
     setResumeText('');
+    setCvFileName('');
     setSocialLinks({ ...EMPTY_LINKS });
   }
 
@@ -56,6 +73,29 @@ export function ProfileSection() {
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}
           />
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              type="button"
+              className="btn btn-outline btn-sm gap-1"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Upload CV
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md,.pdf"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            {cvFileName && (
+              <span className="text-xs opacity-70 flex items-center gap-1">
+                <FileText className="w-3.5 h-3.5" />
+                {cvFileName}
+              </span>
+            )}
+          </div>
         </fieldset>
 
         <fieldset className="fieldset">

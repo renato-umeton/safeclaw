@@ -30,6 +30,7 @@ const sampleUseCases: UseCase[] = [
 
 const devProfile: UserProfile = {
   resumeText: 'Senior Python developer with experience in machine learning',
+  cvFileName: '',
   socialLinks: {
     linkedin: '',
     instagram: '',
@@ -41,6 +42,7 @@ const devProfile: UserProfile = {
 
 const contentProfile: UserProfile = {
   resumeText: 'Marketing manager specializing in social media campaigns',
+  cvFileName: '',
   socialLinks: {
     linkedin: 'https://linkedin.com/in/marketer',
     instagram: 'https://instagram.com/marketer',
@@ -52,6 +54,7 @@ const contentProfile: UserProfile = {
 
 const emptyProfile: UserProfile = {
   resumeText: '',
+  cvFileName: '',
   socialLinks: { linkedin: '', instagram: '', github: '', twitter: '', reddit: '' },
 };
 
@@ -79,6 +82,7 @@ describe('recommendation engine', () => {
     it('deduplicates keywords', () => {
       const profile: UserProfile = {
         resumeText: 'python Python PYTHON',
+        cvFileName: '',
         socialLinks: { linkedin: '', instagram: '', github: '', twitter: '', reddit: '' },
       };
       const kw = extractKeywords(profile);
@@ -89,6 +93,7 @@ describe('recommendation engine', () => {
     it('filters out common stop words', () => {
       const profile: UserProfile = {
         resumeText: 'I am a developer with the best skills and good experience in code',
+        cvFileName: '',
         socialLinks: { linkedin: '', instagram: '', github: '', twitter: '', reddit: '' },
       };
       const kw = extractKeywords(profile);
@@ -171,6 +176,14 @@ describe('recommendation engine', () => {
       const recs = getRecommendations(sampleUseCases, contentProfile);
       // content-1 has instagram/linkedin tags matching contentProfile's social links
       expect(recs[0].id).toBe('content-1');
+    });
+
+    it('includes matchedKeywords in results', () => {
+      const recs = getRecommendations(sampleUseCases, devProfile);
+      const devRec = recs.find((r) => r.id === 'dev-1')!;
+      expect(devRec.matchedKeywords).toBeDefined();
+      expect(devRec.matchedKeywords.length).toBeGreaterThan(0);
+      expect(devRec.matchedKeywords).toContain('python');
     });
   });
 });

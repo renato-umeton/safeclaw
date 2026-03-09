@@ -154,11 +154,13 @@ export interface UseCase {
 /** A use case with a relevance score */
 export interface ScoredUseCase extends UseCase {
   score: number;
+  matchedKeywords: string[];
 }
 
 /** User profile for personalization */
 export interface UserProfile {
   resumeText: string;
+  cvFileName: string;
   socialLinks: {
     linkedin: string;
     instagram: string;

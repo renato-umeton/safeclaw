@@ -140,6 +140,7 @@ describe('UseCasesPage', () => {
     it('shows recommended section when profile exists', async () => {
       mockGetUserProfile.mockResolvedValue({
         resumeText: 'Python developer with machine learning experience',
+        cvFileName: '',
         socialLinks: { linkedin: '', instagram: '', github: 'https://github.com/dev', twitter: '', reddit: '' },
       });
 
@@ -153,6 +154,7 @@ describe('UseCasesPage', () => {
     it('displays top 5 recommended use cases', async () => {
       mockGetUserProfile.mockResolvedValue({
         resumeText: 'Python developer with machine learning experience',
+        cvFileName: '',
         socialLinks: { linkedin: '', instagram: '', github: 'https://github.com/dev', twitter: '', reddit: '' },
       });
 
@@ -169,6 +171,37 @@ describe('UseCasesPage', () => {
     it('loads user profile on mount', async () => {
       await act(async () => { render(<UseCasesPage />); });
       expect(mockGetUserProfile).toHaveBeenCalled();
+    });
+
+    it('shows WHY explanation with matched keywords for recommendations', async () => {
+      mockGetUserProfile.mockResolvedValue({
+        resumeText: 'Python developer with machine learning experience',
+        cvFileName: '',
+        socialLinks: { linkedin: '', instagram: '', github: 'https://github.com/dev', twitter: '', reddit: '' },
+      });
+
+      await act(async () => { render(<UseCasesPage />); });
+
+      await waitFor(() => {
+        // Should show "Why:" labels for recommendations
+        const whyElements = screen.getAllByText(/^Why:/);
+        expect(whyElements.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('shows match strength indicator for recommendations', async () => {
+      mockGetUserProfile.mockResolvedValue({
+        resumeText: 'Python developer with machine learning experience',
+        cvFileName: '',
+        socialLinks: { linkedin: '', instagram: '', github: 'https://github.com/dev', twitter: '', reddit: '' },
+      });
+
+      await act(async () => { render(<UseCasesPage />); });
+
+      await waitFor(() => {
+        const matchBars = document.querySelectorAll('[data-testid="match-bar"]');
+        expect(matchBars.length).toBeGreaterThan(0);
+      });
     });
   });
 });
