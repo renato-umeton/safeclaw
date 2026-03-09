@@ -6,6 +6,8 @@ import { Outlet, NavLink } from 'react-router';
 import { MessageSquare, FolderOpen, Clock, Settings, Lightbulb } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle.js';
 import { FileViewerModal } from '../files/FileViewerModal.js';
+import { InstallBanner } from '../pwa/InstallBanner.js';
+import { UpdateToast } from '../pwa/UpdateToast.js';
 import { useFileViewerStore } from '../../stores/file-viewer-store.js';
 
 const navItems = [
@@ -55,6 +57,9 @@ export function Layout() {
         </div>
       </div>
 
+      {/* ---- PWA install banner ---- */}
+      <InstallBanner />
+
       {/* ---- Page content ---- */}
       <main className="flex-1 overflow-hidden pb-16 sm:pb-0">
         <Outlet />
@@ -73,6 +78,9 @@ export function Layout() {
           </NavLink>
         ))}
       </div>
+
+      {/* ---- PWA update toast ---- */}
+      <UpdateToast />
 
       {/* ---- Global file viewer modal ---- */}
       {viewerFile && (
