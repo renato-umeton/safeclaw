@@ -67,6 +67,12 @@ export const DEFAULT_GROUP_ID = 'br:main';
 /** Default provider */
 export const DEFAULT_PROVIDER = 'anthropic';
 
+/** Hosted app URL (PWA) */
+export const APP_URL = 'https://app-safeclaw.umeton.com';
+
+/** Landing page / website URL */
+export const WEBSITE_URL = 'https://safeclaw.umeton.com';
+
 /** Config keys */
 export const CONFIG_KEYS = {
   ANTHROPIC_API_KEY: 'anthropic_api_key',

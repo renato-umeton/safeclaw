@@ -4,6 +4,8 @@ Thank you for contributing to SafeClaw! This guide covers the expectations and w
 
 ## Getting Started
 
+The hosted app is available at [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com). To contribute, clone the repo and run locally:
+
 ```bash
 git clone https://github.com/renato-umeton/safeclaw.git
 cd safeclaw
