@@ -23,6 +23,7 @@ import {
   CONFIG_KEYS,
   APP_URL,
   WEBSITE_URL,
+  APP_VERSION,
 } from '../src/config';
 
 describe('config constants', () => {
@@ -49,6 +50,11 @@ describe('config constants', () => {
   it('has valid deployment URLs', () => {
     expect(APP_URL).toBe('https://app-safeclaw.umeton.com');
     expect(WEBSITE_URL).toBe('https://safeclaw.umeton.com');
+  });
+
+  it('exports APP_VERSION as a valid semver string', () => {
+    expect(typeof APP_VERSION).toBe('string');
+    expect(APP_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
   it('has sensible Telegram constants', () => {
