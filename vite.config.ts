@@ -14,6 +14,8 @@ export default defineConfig({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8 MiB — WebLLM bundle is ~6 MiB
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
       },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {

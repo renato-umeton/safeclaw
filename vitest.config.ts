@@ -33,6 +33,11 @@ export default defineConfig({
       '../db.js': path.resolve(__dirname, 'src/db.ts'),
       '../orchestrator.js': path.resolve(__dirname, 'src/orchestrator.ts'),
       './agent-worker.js': path.resolve(__dirname, 'src/agent-worker.ts'),
+      '../../hooks/use-pwa-install.js': path.resolve(__dirname, 'src/hooks/use-pwa-install.ts'),
+      '../../hooks/use-pwa-update.js': path.resolve(__dirname, 'src/hooks/use-pwa-update.ts'),
+      '../pwa/InstallBanner.js': path.resolve(__dirname, 'src/components/pwa/InstallBanner.tsx'),
+      '../pwa/UpdateToast.js': path.resolve(__dirname, 'src/components/pwa/UpdateToast.tsx'),
+      'virtual:pwa-register': path.resolve(__dirname, 'tests/mocks/virtual-pwa-register.ts'),
     },
   },
   test: {
