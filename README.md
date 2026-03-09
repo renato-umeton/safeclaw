@@ -34,7 +34,7 @@ Open `http://localhost:5173`, add your API key(s) in Settings, and start chattin
 | **WebLLM** | Local (WebGPU) | Qwen3-4B, Qwen3-30B | Yes (parsed) |
 | **Chrome AI** | Local (built-in) | Gemini Nano | No (summarization only) |
 
-### Provider Routing (Design B)
+### Provider Routing
 
 SafeClaw uses quality-first routing:
 
@@ -49,10 +49,10 @@ SafeClaw uses quality-first routing:
 ┌──────────────────────────────────────────────────────────┐
 │  Browser Tab (PWA)                                       │
 │                                                          │
-│  ┌──────────┐  ┌──────────┐  ┌────────────────────────┐  │
-│  │ Chat UI  │  │ Settings │  │ Task Manager           │  │
-│  └────┬─────┘  └─────┬────┘  └───────┬────────────────┘  │
-│       └──────────────┼───────────────┘                   │
+│  ┌────────┐ ┌────────┐ ┌───────┐ ┌───────┐ ┌──────────┐  │
+│  │ Chat   │ │Settings│ │ Files │ │ Tasks │ │Use Cases │  │
+│  └───┬────┘ └───┬────┘ └──┬────┘ └──┬────┘ └────┬─────┘  │
+│       └──────┴────────┼────────┴──────┘                   │
 │                      ▼                                   │
 │              Orchestrator (main thread)                  │
 │              ├── Provider Router (quality-first)         │
