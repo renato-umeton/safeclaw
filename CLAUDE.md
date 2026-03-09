@@ -158,6 +158,32 @@ it('renders the component and responds to interaction', async () => {
 - Functional style preferred; classes used for provider implementations.
 - Use existing patterns from the codebase — read neighboring files before writing new code.
 
+## Automated Releases (CI)
+
+The `Release` GitHub Actions workflow (`.github/workflows/release.yml`) automates production builds. When a version tag matching `v*.*.*` is pushed, the workflow:
+
+1. Checks out the code
+2. Installs dependencies (`npm ci`)
+3. Runs tests with coverage (`npm run test:coverage`)
+4. Builds the project (`npm run build`)
+5. Zips the `dist/` directory into `safeclaw-<version>.zip`
+6. Creates a GitHub Release with the zip attached as a downloadable asset
+
+**To create a release:**
+
+```bash
+# Bump version in package.json, then:
+git tag v2.1.0
+git push origin v2.1.0
+```
+
+The release artifact will be available at:
+```
+https://github.com/renato-umeton/safeclaw/releases/download/v2.1.0/safeclaw-2.1.0.zip
+```
+
+**Important:** Do not commit build artifacts (zips, dist folders) to the repository. Binary assets belong in GitHub Releases, not in git history.
+
 ## Release Documentation (Mandatory)
 
 Minor and major version bumps require updates to **all four** of these files to reflect the new code and functionalities being released:
