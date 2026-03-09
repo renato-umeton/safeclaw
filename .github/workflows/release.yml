@@ -31,11 +31,17 @@ jobs:
           cd dist
           zip -r "../safeclaw-${VERSION}.zip" .
 
-      - name: Create GitHub Release
+      - name: Upload to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          gh release create "$GITHUB_REF_NAME" "safeclaw-${VERSION}.zip" \
-            --title "SafeClaw v${VERSION}" \
-            --generate-notes
+          # If the release already exists (created via UI), upload the asset to it.
+          # Otherwise, create a new release.
+          if gh release view "$GITHUB_REF_NAME" &>/dev/null; then
+            gh release upload "$GITHUB_REF_NAME" "safeclaw-${VERSION}.zip" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "safeclaw-${VERSION}.zip" \
+              --title "SafeClaw v${VERSION}" \
+              --generate-notes
+          fi
