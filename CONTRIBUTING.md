@@ -174,6 +174,10 @@ Before submitting your PR, verify:
 - [ ] No new `any` types without justification in a comment
 - [ ] Changes are focused and minimal — no unrelated refactors
 
+## Example Workflows
+
+SafeClaw showcases curated example workflows on the website and in the README, sourced from [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases). When adding new examples, keep descriptions concise (one sentence) and ensure proper attribution to the source repository.
+
 ## Reporting Issues
 
 Open an issue on GitHub with:
