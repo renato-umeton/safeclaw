@@ -48,8 +48,26 @@ describe('Orchestrator', () => {
       expect(orchestrator.getState()).toBe('idle');
     });
 
-    it('returns false when no API keys set', () => {
+    it('returns false when no API keys set and local preference is not always', () => {
       expect(orchestrator.isConfigured()).toBe(false);
+    });
+
+    it('returns true when local preference is always even without API keys', async () => {
+      await orchestrator.setLocalPreference('always');
+      expect(orchestrator.isConfigured()).toBe(true);
+      await orchestrator.setLocalPreference('offline-only');
+    });
+
+    it('returns true when provider is webllm even without API keys', async () => {
+      await orchestrator.setProviderId('webllm');
+      expect(orchestrator.isConfigured()).toBe(true);
+      await orchestrator.setProviderId('anthropic');
+    });
+
+    it('returns true when provider is chrome-ai even without API keys', async () => {
+      await orchestrator.setProviderId('chrome-ai');
+      expect(orchestrator.isConfigured()).toBe(true);
+      await orchestrator.setProviderId('anthropic');
     });
 
     it('returns empty string for unset keys', () => {
@@ -106,6 +124,8 @@ describe('Orchestrator', () => {
 
     it('emits error on compactContext when not configured', async () => {
       await orchestrator.setApiKey('anthropic', '');
+      await orchestrator.setLocalPreference('offline-only');
+      await orchestrator.setProviderId('anthropic');
       const errorCallback = vi.fn();
       orchestrator.events.on('error', errorCallback);
       await orchestrator.compactContext();
@@ -308,8 +328,10 @@ describe('Orchestrator', () => {
       (orchestrator as any).state = 'idle';
     });
 
-    it('processQueue emits error when no API key', async () => {
+    it('processQueue emits error when no API key and no local mode', async () => {
       await orchestrator.setApiKey('anthropic', '');
+      await orchestrator.setLocalPreference('offline-only');
+      await orchestrator.setProviderId('anthropic');
       (orchestrator as any).messageQueue = [{
         id: 'q-1',
         groupId: 'br:main',
@@ -327,6 +349,37 @@ describe('Orchestrator', () => {
       expect(errorCallback).toHaveBeenCalled();
       orchestrator.events.off('error', errorCallback);
       await orchestrator.setApiKey('anthropic', 'my-key');
+    });
+
+    it('processQueue proceeds when local preference is always without API keys', async () => {
+      await orchestrator.setApiKey('anthropic', '');
+      await orchestrator.setLocalPreference('always');
+      (orchestrator as any).state = 'idle';
+      (orchestrator as any).processing = false;
+      (orchestrator as any).messageQueue = [{
+        id: 'q-local',
+        groupId: 'br:main',
+        sender: 'User',
+        content: 'test local',
+        timestamp: Date.now(),
+        channel: 'browser',
+      }];
+
+      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
+      const errorCallback = vi.fn();
+      orchestrator.events.on('error', errorCallback);
+
+      await (orchestrator as any).processQueue();
+
+      expect(errorCallback).not.toHaveBeenCalled();
+      expect(postMessageSpy).toHaveBeenCalled();
+
+      orchestrator.events.off('error', errorCallback);
+      postMessageSpy.mockRestore();
+      await orchestrator.setApiKey('anthropic', 'my-key');
+      await orchestrator.setLocalPreference('offline-only');
+      (orchestrator as any).state = 'idle';
+      (orchestrator as any).processing = false;
     });
 
     it('processQueue invokes agent when configured', async () => {

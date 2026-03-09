@@ -211,10 +211,14 @@ export class Orchestrator {
   }
 
   /**
-   * Check if at least one provider is configured with an API key.
+   * Check if at least one provider is usable — either a cloud API key is set,
+   * or local mode is enabled (local preference "always" or a local provider selected).
    */
   isConfigured(): boolean {
-    return !!(this.apiKeys.anthropic || this.apiKeys.gemini);
+    const hasCloudKey = !!(this.apiKeys.anthropic || this.apiKeys.gemini);
+    const isLocalProvider = this.providerId === 'webllm' || this.providerId === 'chrome-ai';
+    const localAlways = this.localPreference === 'always';
+    return hasCloudKey || isLocalProvider || localAlways;
   }
 
   /**
