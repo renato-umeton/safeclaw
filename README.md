@@ -117,13 +117,22 @@ Optional. Works entirely via HTTPS — no WebSockets or special protocols.
 
 **Caveat**: The browser tab must be open for the bot to respond.
 
+## Contributing
+
+We use **Test-Driven Development** — all contributions must include tests written before implementation, and coverage must stay above 90% on all metrics.
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Full contributor guide with TDD workflow, testing examples, and PR checklist
+- **[CLAUDE.md](CLAUDE.md)** — Agent-specific guide for AI contributors (repo layout, commands, test patterns)
+
 ## Development
 
 ```bash
-npm run dev        # Vite dev server with HMR
-npm run build      # Production build -> dist/
-npm run preview    # Preview production build
-npm run typecheck  # TypeScript type checking
+npm run dev            # Vite dev server with HMR
+npm run build          # Production build -> dist/
+npm run preview        # Preview production build
+npm run typecheck      # TypeScript type checking
+npm run test           # Run test suite
+npm run test:coverage  # Run tests with coverage report (must be >90%)
 ```
 
 ## Deploy
