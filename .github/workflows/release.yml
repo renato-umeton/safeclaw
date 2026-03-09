@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run test:coverage
+
+      - run: npm run build
+
+      - name: Zip dist
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd dist
+          zip -r "../safeclaw-${VERSION}.zip" .
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" "safeclaw-${VERSION}.zip" \
+            --title "SafeClaw v${VERSION}" \
+            --generate-notes
