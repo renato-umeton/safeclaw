@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { USE_CASES, getAllCategories } from '../../use-cases.js';
 import { getUserProfile } from '../../db.js';
-import { getRecommendations } from '../../recommendations.js';
+import { getRecommendationsWithReasons } from '../../recommendations.js';
 import type { UseCase, ScoredUseCase, Difficulty, UserProfile } from '../../types.js';
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
@@ -35,6 +35,58 @@ function UseCaseCard({ useCase }: { useCase: UseCase }) {
   );
 }
 
+function RecommendedCard({ rec, maxScore }: { rec: ScoredUseCase; maxScore: number }) {
+  const matchPercent = maxScore > 0 ? Math.round((rec.score / maxScore) * 100) : 0;
+
+  return (
+    <div className="card card-bordered bg-base-200">
+      <div className="card-body p-4 gap-2">
+        <h4 className="card-title text-sm">{rec.title}</h4>
+        <p className="text-xs opacity-70">{rec.description}</p>
+
+        {/* Match strength bar */}
+        <div className="w-full" data-testid="match-bar">
+          <div className="flex justify-between text-xs opacity-60 mb-0.5">
+            <span>Match</span>
+            <span>{matchPercent}%</span>
+          </div>
+          <div className="w-full bg-base-300 rounded-full h-1.5">
+            <div
+              className="bg-primary rounded-full h-1.5 transition-all"
+              style={{ width: `${matchPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* WHY explanation */}
+        {rec.matchedKeywords.length > 0 && (
+          <p className="text-xs opacity-60">
+            <span className="font-semibold">Why:</span>{' '}
+            Your profile mentions{' '}
+            {rec.matchedKeywords.map((kw, i) => (
+              <span key={kw}>
+                {i > 0 && (i === rec.matchedKeywords.length - 1 ? ' and ' : ', ')}
+                <span className="badge badge-xs badge-primary badge-outline">{kw}</span>
+              </span>
+            ))}
+            {' '}which align with this workflow.
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          <span className="badge badge-sm badge-outline">{rec.category}</span>
+          <span className={`badge badge-sm ${DIFFICULTY_COLORS[rec.difficulty]}`}>
+            {rec.difficulty}
+          </span>
+          {rec.tags.slice(0, 3).map((tag) => (
+            <span key={tag} className="badge badge-sm badge-ghost">{tag}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function UseCasesPage() {
   const [category, setCategory] = useState('');
   const [difficulty, setDifficulty] = useState('');
@@ -46,7 +98,7 @@ export function UseCasesPage() {
     getUserProfile().then((p) => {
       setProfile(p);
       if (p) {
-        const recs = getRecommendations(USE_CASES, p, 5);
+        const recs = getRecommendationsWithReasons(USE_CASES, p, 5);
         const scoredRecs = recs.filter((r) => r.score > 0);
         setRecommendations(scoredRecs);
       }
@@ -54,6 +106,7 @@ export function UseCasesPage() {
   }, []);
 
   const categories = getAllCategories();
+  const maxScore = recommendations.length > 0 ? recommendations[0].score : 0;
 
   const filtered = USE_CASES.filter((uc) => {
     if (category && uc.category !== category) return false;
@@ -84,7 +137,7 @@ export function UseCasesPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {recommendations.map((rec) => (
               <div key={rec.id} data-testid="rec-card">
-                <UseCaseCard useCase={rec} />
+                <RecommendedCard rec={rec} maxScore={maxScore} />
               </div>
             ))}
           </div>

@@ -19,6 +19,7 @@ async function deleteDatabase(name: string): Promise<void> {
 
 const fullProfile: UserProfile = {
   resumeText: 'Senior Python developer with 10 years experience in machine learning and data science.',
+  cvFileName: 'jane_doe_cv.txt',
   socialLinks: {
     linkedin: 'https://linkedin.com/in/janedev',
     instagram: 'https://instagram.com/janedev',
@@ -69,6 +70,7 @@ describe('user profile persistence', () => {
     await saveUserProfile(fullProfile);
     const updated: UserProfile = {
       resumeText: 'Updated resume',
+      cvFileName: '',
       socialLinks: {
         linkedin: '',
         instagram: '',
@@ -96,6 +98,7 @@ describe('user profile persistence', () => {
   it('handles empty/partial profiles', async () => {
     const emptyProfile: UserProfile = {
       resumeText: '',
+      cvFileName: '',
       socialLinks: {
         linkedin: '',
         instagram: '',
