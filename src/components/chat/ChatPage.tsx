@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef } from 'react';
-import { X, MessageSquare, Globe, FileText, MapPin } from 'lucide-react';
+import { X, MessageSquare, Globe, FileText, MapPin, Download } from 'lucide-react';
 import { useOrchestratorStore } from '../../stores/orchestrator-store.js';
 import { MessageList } from './MessageList.js';
 import { ChatInput } from './ChatInput.js';
@@ -55,6 +55,7 @@ export function ChatPage() {
   const orchState = useOrchestratorStore((s) => s.state);
   const tokenUsage = useOrchestratorStore((s) => s.tokenUsage);
   const error = useOrchestratorStore((s) => s.error);
+  const webllmProgress = useOrchestratorStore((s) => s.webllmProgress);
   const sendMessage = useOrchestratorStore((s) => s.sendMessage);
   const loadHistory = useOrchestratorStore((s) => s.loadHistory);
 
@@ -123,6 +124,23 @@ export function ChatPage() {
 
         {/* Compact / New Session actions */}
         <ChatActions disabled={orchState !== 'idle'} />
+
+        {/* Model download progress */}
+        {webllmProgress && (
+          <div className="px-4 pb-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Download className="w-4 h-4 animate-pulse" />
+              <span className="flex-1 truncate">{webllmProgress.status}</span>
+              <span className="text-xs opacity-60">{Math.round(webllmProgress.progress * 100)}%</span>
+            </div>
+            <progress
+              role="progressbar"
+              className="progress progress-primary w-full h-2 mt-1"
+              value={webllmProgress.progress * 100}
+              max={100}
+            />
+          </div>
+        )}
 
         {/* Error display */}
         {error && (

@@ -313,6 +313,17 @@ export class Orchestrator {
   }
 
   /**
+   * Pre-download and cache the currently selected local model.
+   * Triggers progress events via the webllm-progress event.
+   */
+  preloadModel(): void {
+    this.agentWorker.postMessage({
+      type: 'preload',
+      payload: { providerConfig: this.buildProviderConfig() },
+    });
+  }
+
+  /**
    * Submit a message from the browser chat UI.
    */
   submitMessage(text: string, groupId?: string): void {

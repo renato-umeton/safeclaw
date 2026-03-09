@@ -460,6 +460,17 @@ describe('Orchestrator', () => {
       orchestrator.events.off('message', msgCallback);
     });
 
+    // --- preloadModel ---
+
+    it('preloadModel sends preload message to worker', () => {
+      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
+      orchestrator.preloadModel();
+      expect(postMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'preload' }),
+      );
+      postMessageSpy.mockRestore();
+    });
+
     // --- buildProviderConfig ---
 
     it('returns correct config structure', () => {

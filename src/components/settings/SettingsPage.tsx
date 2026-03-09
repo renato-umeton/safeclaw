@@ -5,13 +5,13 @@
 import { useEffect, useState } from 'react';
 import {
   Palette, KeyRound, Eye, EyeOff, Bot, MessageSquare,
-  Smartphone, HardDrive, Lock, Check, Cpu, Wifi, WifiOff,
+  Smartphone, HardDrive, Lock, Check, Cpu, Wifi, WifiOff, Download,
 } from 'lucide-react';
 import { getConfig } from '../../db.js';
 import { CONFIG_KEYS } from '../../config.js';
 import { getStorageEstimate, requestPersistentStorage } from '../../storage.js';
 import { decryptValue } from '../../crypto.js';
-import { getOrchestrator } from '../../stores/orchestrator-store.js';
+import { getOrchestrator, useOrchestratorStore } from '../../stores/orchestrator-store.js';
 import { useThemeStore, type ThemeChoice } from '../../stores/theme-store.js';
 import type { ProviderId, LocalPreference } from '../../providers/types.js';
 import { ProfileSection } from './ProfileSection.js';
@@ -115,6 +115,9 @@ export function SettingsPage() {
 
   // Theme
   const { theme, setTheme } = useThemeStore();
+
+  // WebLLM download progress
+  const webllmProgress = useOrchestratorStore((s) => s.webllmProgress);
 
   // Load current values
   useEffect(() => {
@@ -394,6 +397,33 @@ export function SettingsPage() {
               <option value="always">Always local — prefer local models</option>
             </select>
           </fieldset>
+
+          {/* Download / preload button for local providers */}
+          {currentProvider.isLocal && currentProvider.id === 'webllm' && !webllmProgress && (
+            <button
+              className="btn btn-outline btn-sm gap-2"
+              onClick={() => orch.preloadModel()}
+            >
+              <Download className="w-4 h-4" /> Download Model
+            </button>
+          )}
+
+          {/* Download progress bar */}
+          {webllmProgress && (
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <Download className="w-4 h-4 animate-pulse" />
+                <span className="flex-1 truncate">{webllmProgress.status}</span>
+                <span className="text-xs opacity-60">{Math.round(webllmProgress.progress * 100)}%</span>
+              </div>
+              <progress
+                role="progressbar"
+                className="progress progress-primary w-full h-2 mt-1"
+                value={webllmProgress.progress * 100}
+                max={100}
+              />
+            </div>
+          )}
 
           <div className="flex items-center gap-2 text-xs opacity-60">
             {navigator.onLine

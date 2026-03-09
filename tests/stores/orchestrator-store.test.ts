@@ -18,6 +18,7 @@ describe('useOrchestratorStore', () => {
       error: null,
       activeGroupId: 'br:main',
       ready: false,
+      webllmProgress: null,
     });
   });
 
@@ -28,6 +29,7 @@ describe('useOrchestratorStore', () => {
     expect(state.state).toBe('idle');
     expect(state.error).toBeNull();
     expect(state.ready).toBe(false);
+    expect(state.webllmProgress).toBeNull();
   });
 
   it('clearError clears the error', () => {
@@ -65,6 +67,7 @@ describe('useOrchestratorStore', () => {
       expect(eventNames).toContain('session-reset');
       expect(eventNames).toContain('context-compacted');
       expect(eventNames).toContain('token-usage');
+      expect(eventNames).toContain('webllm-progress');
       expect(eventNames).toContain('ready');
     });
 
@@ -288,6 +291,48 @@ describe('useOrchestratorStore', () => {
       const usage = { inputTokens: 100, outputTokens: 50 };
       callbacks['token-usage'](usage);
       expect(useOrchestratorStore.getState().tokenUsage).toEqual(usage);
+    });
+
+    it('bridges webllm-progress events', async () => {
+      const callbacks: Record<string, Function> = {};
+      const mockOrch = {
+        events: {
+          on: vi.fn((event: string, cb: Function) => { callbacks[event] = cb; }),
+          off: vi.fn(),
+          emit: vi.fn(),
+        },
+        submitMessage: vi.fn(),
+        newSession: vi.fn(),
+        compactContext: vi.fn(),
+      } as any;
+
+      await initOrchestratorStore(mockOrch);
+
+      const progress = { model: 'qwen3-4b', progress: 50, status: 'Downloading...' };
+      callbacks['webllm-progress'](progress);
+      expect(useOrchestratorStore.getState().webllmProgress).toEqual(progress);
+    });
+
+    it('clears webllm-progress when progress reaches 100', async () => {
+      const callbacks: Record<string, Function> = {};
+      const mockOrch = {
+        events: {
+          on: vi.fn((event: string, cb: Function) => { callbacks[event] = cb; }),
+          off: vi.fn(),
+          emit: vi.fn(),
+        },
+        submitMessage: vi.fn(),
+        newSession: vi.fn(),
+        compactContext: vi.fn(),
+      } as any;
+
+      await initOrchestratorStore(mockOrch);
+
+      callbacks['webllm-progress']({ model: 'qwen3-4b', progress: 50, status: 'Downloading...' });
+      expect(useOrchestratorStore.getState().webllmProgress).not.toBeNull();
+
+      callbacks['webllm-progress']({ model: 'qwen3-4b', progress: 1, status: 'Finished' });
+      expect(useOrchestratorStore.getState().webllmProgress).toBeNull();
     });
 
     it('bridges ready events', async () => {
