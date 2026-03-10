@@ -1,12 +1,12 @@
 // ---------------------------------------------------------------------------
-// SafeClaw — PWA Update Toast
+// SafeClaw — PWA Update Toast (with auto-update countdown)
 // ---------------------------------------------------------------------------
 
 import { RefreshCw, Wifi, X } from 'lucide-react';
 import { usePwaUpdate } from '../../hooks/use-pwa-update.js';
 
 export function UpdateToast() {
-  const { needRefresh, offlineReady, updateServiceWorker, dismissUpdate } = usePwaUpdate();
+  const { needRefresh, offlineReady, countdown, updateServiceWorker, dismissUpdate } = usePwaUpdate();
 
   if (!needRefresh && !offlineReady) return null;
 
@@ -18,14 +18,19 @@ export function UpdateToast() {
             <RefreshCw className="w-5 h-5 shrink-0" />
             <div className="flex-1">
               <span className="text-sm font-semibold">New version available</span>
+              {countdown !== null && (
+                <span className="block text-xs opacity-70">
+                  Auto-updating in {countdown}s — your settings will be preserved
+                </span>
+              )}
             </div>
             <div className="flex gap-1">
               <button
                 className="btn btn-sm btn-primary"
                 onClick={updateServiceWorker}
-                aria-label="Reload to update"
+                aria-label="Reload now"
               >
-                Reload
+                Reload now
               </button>
               <button
                 className="btn btn-sm btn-ghost"

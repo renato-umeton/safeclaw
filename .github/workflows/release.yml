@@ -25,9 +25,11 @@ jobs:
 
       - run: npm run build
 
-      - name: Zip dist
+      - name: Bundle website and zip dist
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          bash scripts/sync-website-version.sh
+          cp docs/website/index.html dist/website.html
           cd dist
           zip -r "../safeclaw-${VERSION}.zip" .
 

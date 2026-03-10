@@ -26,6 +26,7 @@ export default defineConfig({
         name: 'SafeClaw',
         short_name: 'SafeClaw',
         description: 'Browser-native personal AI assistant',
+        version: pkg.version,
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',
         display: 'standalone',
