@@ -8,7 +8,7 @@ test.describe('App boot', () => {
   test('loads the app and renders the layout', async ({ page }) => {
     await page.goto('/');
     // The app should render the SafeClaw branding in the navbar
-    await expect(page.locator('text=SafeClaw')).toBeVisible();
+    await expect(page.locator('.navbar >> text=SafeClaw')).toBeVisible();
   });
 
   test('shows loading state while initializing', async ({ page }) => {
@@ -22,7 +22,7 @@ test.describe('App boot', () => {
     await page.goto('/');
     // Without any API keys configured, the app should redirect to /settings
     await page.waitForURL('**/settings', { timeout: 10_000 });
-    await expect(page.locator('text=Settings')).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'Settings' })).toBeVisible();
   });
 });
 

@@ -7,17 +7,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Settings page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForSelector('text=Settings', { timeout: 10_000 });
+    await page.waitForSelector('h2:has-text("Settings")', { timeout: 10_000 });
   });
 
   test('renders all settings sections', async ({ page }) => {
-    await expect(page.locator('text=Appearance')).toBeVisible();
-    await expect(page.locator('text=LLM Provider')).toBeVisible();
-    await expect(page.locator('text=API Keys')).toBeVisible();
-    await expect(page.locator('text=Local Models')).toBeVisible();
-    await expect(page.locator('text=Assistant Name')).toBeVisible();
-    await expect(page.locator('text=Telegram Bot')).toBeVisible();
-    await expect(page.locator('text=Storage')).toBeVisible();
+    await expect(page.locator('.card-title', { hasText: 'Appearance' })).toBeVisible();
+    await expect(page.locator('.card-title', { hasText: 'LLM Provider' })).toBeVisible();
+    await expect(page.locator('.card-title', { hasText: 'API Keys' })).toBeVisible();
+    await expect(page.locator('.card-title', { hasText: 'Local Models' })).toBeVisible();
+    await expect(page.locator('.card-title', { hasText: 'Assistant Name' })).toBeVisible();
+    await expect(page.locator('.card-title', { hasText: 'Telegram Bot' })).toBeVisible();
+    await expect(page.locator('.card-title', { hasText: 'Storage' })).toBeVisible();
   });
 
   test('theme selector has system/light/dark options', async ({ page }) => {
