@@ -17,8 +17,9 @@ const mockSkill: HubSkill = {
   author: 'tester',
   version: '1.0.0',
   downloads: 100,
-  createdAt: '2026-01-01T00:00:00Z',
-  updatedAt: '2026-03-01T00:00:00Z',
+  stars: 5,
+  createdAt: 1700000000000,
+  updatedAt: 1709000000000,
 };
 
 const mockSkill2: HubSkill = {
@@ -28,8 +29,9 @@ const mockSkill2: HubSkill = {
   author: 'dev',
   version: '2.0.0',
   downloads: 200,
-  createdAt: '2026-02-01T00:00:00Z',
-  updatedAt: '2026-03-05T00:00:00Z',
+  stars: 10,
+  createdAt: 1705000000000,
+  updatedAt: 1709500000000,
 };
 
 describe('useSkillHubStore', () => {
@@ -193,7 +195,7 @@ describe('useSkillHubStore', () => {
 
   describe('selectSkill', () => {
     it('fetches skill detail and sets selectedSkill', async () => {
-      const detail = { ...mockSkill, readme: '# Test' };
+      const detail = { ...mockSkill, changelog: 'Initial release', avatarUrl: 'https://example.com/avatar.png' };
       vi.mocked(getSkillDetail).mockResolvedValueOnce(detail);
 
       await useSkillHubStore.getState().selectSkill('test-skill');
@@ -212,7 +214,7 @@ describe('useSkillHubStore', () => {
       const promise = useSkillHubStore.getState().selectSkill('test-skill');
       expect(useSkillHubStore.getState().selectedSkillLoading).toBe(true);
 
-      resolvePromise!({ ...mockSkill, readme: '# Test' });
+      resolvePromise!({ ...mockSkill, changelog: '', avatarUrl: '' });
       await promise;
       expect(useSkillHubStore.getState().selectedSkillLoading).toBe(false);
     });
@@ -230,7 +232,7 @@ describe('useSkillHubStore', () => {
   describe('clearSelection', () => {
     it('clears selectedSkill', () => {
       useSkillHubStore.setState({
-        selectedSkill: { ...mockSkill, readme: '# Test' },
+        selectedSkill: { ...mockSkill, changelog: '', avatarUrl: '' },
       });
 
       useSkillHubStore.getState().clearSelection();

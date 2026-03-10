@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef, useState } from 'react';
-import { Search, Download, X, ExternalLink } from 'lucide-react';
+import { Search, Download, X, ExternalLink, Star } from 'lucide-react';
 import { useSkillHubStore } from '../../stores/skill-hub-store.js';
 import type { HubSkill } from '../../types.js';
 
@@ -28,12 +28,24 @@ function SkillCard({
         <h4 className="card-title text-sm">{skill.name}</h4>
         <p className="text-xs opacity-70 line-clamp-2">{skill.description}</p>
         <div className="flex flex-wrap gap-1.5 mt-1 items-center">
-          <span className="badge badge-sm badge-outline">{skill.author}</span>
-          <span className="badge badge-sm badge-ghost">v{skill.version}</span>
-          <span className="flex items-center gap-0.5 text-xs opacity-50">
-            <Download className="w-3 h-3" />
-            {skill.downloads.toLocaleString()}
-          </span>
+          {skill.author && (
+            <span className="badge badge-sm badge-outline">{skill.author}</span>
+          )}
+          {skill.version && (
+            <span className="badge badge-sm badge-ghost">v{skill.version}</span>
+          )}
+          {skill.downloads > 0 && (
+            <span className="flex items-center gap-0.5 text-xs opacity-50">
+              <Download className="w-3 h-3" />
+              {skill.downloads.toLocaleString()}
+            </span>
+          )}
+          {skill.stars > 0 && (
+            <span className="flex items-center gap-0.5 text-xs opacity-50">
+              <Star className="w-3 h-3" />
+              {skill.stars}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -165,18 +177,39 @@ export function SkillHubPage() {
               </div>
             ) : selectedSkill ? (
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-bold">{selectedSkill.name}</h3>
-                  <p className="text-sm opacity-70">{selectedSkill.description}</p>
+                <div className="flex items-start gap-3">
+                  {selectedSkill.avatarUrl && (
+                    <img
+                      src={selectedSkill.avatarUrl}
+                      alt={selectedSkill.author}
+                      className="w-10 h-10 rounded-full"
+                    />
+                  )}
+                  <div>
+                    <h3 className="text-lg font-bold">{selectedSkill.name}</h3>
+                    <p className="text-sm opacity-70">{selectedSkill.description}</p>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-sm">
-                  <span className="badge badge-outline">{selectedSkill.author}</span>
-                  <span className="badge badge-ghost">v{selectedSkill.version}</span>
-                  <span className="flex items-center gap-1 opacity-60">
-                    <Download className="w-3.5 h-3.5" />
-                    {selectedSkill.downloads.toLocaleString()} downloads
-                  </span>
+                  {selectedSkill.author && (
+                    <span className="badge badge-outline">{selectedSkill.author}</span>
+                  )}
+                  {selectedSkill.version && (
+                    <span className="badge badge-ghost">v{selectedSkill.version}</span>
+                  )}
+                  {selectedSkill.downloads > 0 && (
+                    <span className="flex items-center gap-1 opacity-60">
+                      <Download className="w-3.5 h-3.5" />
+                      {selectedSkill.downloads.toLocaleString()} downloads
+                    </span>
+                  )}
+                  {selectedSkill.stars > 0 && (
+                    <span className="flex items-center gap-1 opacity-60">
+                      <Star className="w-3.5 h-3.5" />
+                      {selectedSkill.stars} stars
+                    </span>
+                  )}
                 </div>
 
                 {/* Install command */}
@@ -187,11 +220,12 @@ export function SkillHubPage() {
                   </code>
                 </div>
 
-                {/* SKILL.md content */}
-                {selectedSkill.readme && (
-                  <div className="prose prose-sm max-w-none">
+                {/* Changelog */}
+                {selectedSkill.changelog && (
+                  <div>
+                    <p className="text-xs font-semibold opacity-60 mb-1">Changelog</p>
                     <pre className="whitespace-pre-wrap text-xs bg-base-200 p-4 rounded-lg overflow-auto max-h-96">
-                      {selectedSkill.readme}
+                      {selectedSkill.changelog}
                     </pre>
                   </div>
                 )}

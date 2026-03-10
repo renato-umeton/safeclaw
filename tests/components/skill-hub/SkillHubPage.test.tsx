@@ -34,8 +34,9 @@ const mockSkill: HubSkill = {
   author: 'tester',
   version: '1.0.0',
   downloads: 42,
-  createdAt: '2026-01-01T00:00:00Z',
-  updatedAt: '2026-03-01T00:00:00Z',
+  stars: 5,
+  createdAt: 1700000000000,
+  updatedAt: 1709000000000,
 };
 
 const mockSkill2: HubSkill = {
@@ -45,8 +46,9 @@ const mockSkill2: HubSkill = {
   author: 'dev',
   version: '2.0.0',
   downloads: 200,
-  createdAt: '2026-02-01T00:00:00Z',
-  updatedAt: '2026-03-05T00:00:00Z',
+  stars: 10,
+  createdAt: 1705000000000,
+  updatedAt: 1709500000000,
 };
 
 describe('SkillHubPage', () => {
@@ -185,12 +187,12 @@ describe('SkillHubPage', () => {
   it('shows skill detail modal when selectedSkill is set', () => {
     useSkillHubStore.setState({
       skills: [mockSkill],
-      selectedSkill: { ...mockSkill, readme: '# Test Skill\n\nDetailed info.' },
+      selectedSkill: { ...mockSkill, changelog: 'Initial release of Test Skill.', avatarUrl: '' },
     });
 
     render(<SkillHubPage />);
     expect(screen.getByTestId('skill-detail-modal')).toBeInTheDocument();
-    expect(screen.getByText(/detailed info/i)).toBeInTheDocument();
+    expect(screen.getByText(/initial release/i)).toBeInTheDocument();
   });
 
   it('shows loading state in detail modal', () => {
@@ -207,7 +209,7 @@ describe('SkillHubPage', () => {
     const clearSelection = vi.fn();
     useSkillHubStore.setState({
       skills: [mockSkill],
-      selectedSkill: { ...mockSkill, readme: '# Test' },
+      selectedSkill: { ...mockSkill, changelog: '', avatarUrl: '' },
       clearSelection,
     });
 
