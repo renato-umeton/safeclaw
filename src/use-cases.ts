@@ -135,6 +135,112 @@ export const USE_CASES: UseCase[] = [
     difficulty: 'advanced',
   },
 
+  // --- Productivity ---
+  {
+    id: 'prod-daily-news-digest',
+    title: 'Daily News Digest',
+    description: 'Aggregate and summarize tech news from multiple sources into a curated daily briefing. Schedule recurring fetches with cron and keep your reading list private.',
+    category: 'Productivity',
+    tags: ['news', 'summarization', 'cron', 'scheduling', 'reading', 'productivity'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'prod-inbox-declutter',
+    title: 'Inbox De-clutter',
+    description: 'Summarize newsletters and long email threads into condensed digests. Paste email content and get actionable summaries without forwarding to external services.',
+    category: 'Productivity',
+    tags: ['email', 'summarization', 'productivity', 'organization'],
+    difficulty: 'beginner',
+  },
+  {
+    id: 'prod-personal-crm',
+    title: 'Personal CRM',
+    description: 'Track contacts, interactions, and follow-ups in your browser workspace. Store relationship notes in OPFS files so contact data never leaves your device.',
+    category: 'Productivity',
+    tags: ['contacts', 'organization', 'files', 'productivity', 'communication'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'prod-meeting-notes',
+    title: 'Meeting Notes & Action Items',
+    description: 'Convert meeting transcripts into structured summaries with automatic task creation using the create_task tool for follow-up reminders.',
+    category: 'Productivity',
+    tags: ['meetings', 'notes', 'tasks', 'scheduling', 'productivity'],
+    difficulty: 'beginner',
+  },
+
+  // --- Creative ---
+  {
+    id: 'creative-content-pipeline',
+    title: 'Content Pipeline',
+    description: 'Automate idea scouting, research, and content tracking for video or blog production workflows. Combine web fetching with local file organization.',
+    category: 'Creative',
+    tags: ['content', 'video', 'blog', 'research', 'writing', 'productivity'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'creative-podcast-production',
+    title: 'Podcast Production',
+    description: 'Automate guest research, episode outlines, show notes, and promotional assets. Use fetch_url for research and the file system for organizing production materials.',
+    category: 'Creative',
+    tags: ['podcast', 'audio', 'writing', 'research', 'content'],
+    difficulty: 'advanced',
+  },
+
+  // --- Social ---
+  {
+    id: 'social-reddit-youtube-digest',
+    title: 'Reddit/YouTube Digest',
+    description: 'Summarize curated digests from favorite subreddits or YouTube channels. Fetch public feeds and produce condensed summaries of trending discussions.',
+    category: 'Social',
+    tags: ['reddit', 'youtube', 'summarization', 'social-media', 'curation'],
+    difficulty: 'beginner',
+  },
+  {
+    id: 'social-community-monitor',
+    title: 'Community Monitoring',
+    description: 'Track mentions, sentiment, and trending topics across social platforms. Schedule recurring checks and store analysis results locally for privacy.',
+    category: 'Social',
+    tags: ['social-media', 'monitoring', 'analysis', 'cron', 'scheduling'],
+    difficulty: 'advanced',
+  },
+
+  // --- DevOps ---
+  {
+    id: 'devops-self-healing-server',
+    title: 'Self-Healing Home Server',
+    description: 'An always-on infrastructure agent that monitors services, runs health checks via cron, and generates recovery scripts using the shell emulator.',
+    category: 'DevOps',
+    tags: ['infrastructure', 'monitoring', 'bash', 'cron', 'automation', 'scripting'],
+    difficulty: 'advanced',
+  },
+  {
+    id: 'devops-log-analyzer',
+    title: 'Log File Analyzer',
+    description: 'Upload application logs to the browser workspace and analyze error patterns, frequency, and root causes. All log data stays local for security compliance.',
+    category: 'DevOps',
+    tags: ['logs', 'analysis', 'debugging', 'files', 'privacy'],
+    difficulty: 'intermediate',
+  },
+
+  // --- Education ---
+  {
+    id: 'edu-idea-validator',
+    title: 'Pre-Build Idea Validator',
+    description: 'Scan GitHub, Hacker News, npm, PyPI, and Product Hunt before building a new project. Validate your idea against existing solutions with web research.',
+    category: 'Education',
+    tags: ['research', 'validation', 'web', 'fetch', 'github', 'programming'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'edu-knowledge-base',
+    title: 'Personal Knowledge Base',
+    description: 'Build a searchable knowledge base from URLs, articles, and notes. Store everything in OPFS and use the LLM to retrieve and synthesize information on demand.',
+    category: 'Education',
+    tags: ['knowledge', 'notes', 'files', 'research', 'reading', 'organization'],
+    difficulty: 'advanced',
+  },
+
   // --- Communication ---
   {
     id: 'comm-meeting-prep',

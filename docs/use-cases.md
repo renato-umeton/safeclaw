@@ -72,6 +72,64 @@ Describe what you need and get working shell scripts. Test them immediately with
 **Difficulty:** Advanced
 Design API contracts, generate mock responses, and test endpoints with fetch_url — a complete API development workflow that runs entirely in your browser.
 
+## Productivity
+
+### Daily News Digest
+**Difficulty:** Intermediate
+Aggregate and summarize tech news from multiple sources into a curated daily briefing. Schedule recurring fetches with cron and keep your reading list private — all research stays in your browser.
+
+### Inbox De-clutter
+**Difficulty:** Beginner
+Summarize newsletters and long email threads into condensed digests. Paste email content and get actionable summaries without forwarding to external services.
+
+### Personal CRM
+**Difficulty:** Intermediate
+Track contacts, interactions, and follow-ups in your browser workspace. Store relationship notes in OPFS files so contact data never leaves your device.
+
+### Meeting Notes & Action Items
+**Difficulty:** Beginner
+Convert meeting transcripts into structured summaries with automatic task creation using the create_task tool for follow-up reminders.
+
+## Creative
+
+### Content Pipeline
+**Difficulty:** Intermediate
+Automate idea scouting, research, and content tracking for video or blog production workflows. Combine web fetching with local file organization for a privacy-first content workflow.
+
+### Podcast Production
+**Difficulty:** Advanced
+Automate guest research, episode outlines, show notes, and promotional assets. Use fetch_url for research and the OPFS file system for organizing production materials.
+
+## Social
+
+### Reddit/YouTube Digest
+**Difficulty:** Beginner
+Summarize curated digests from favorite subreddits or YouTube channels. Fetch public feeds and produce condensed summaries of trending discussions — all processed locally.
+
+### Community Monitoring
+**Difficulty:** Advanced
+Track mentions, sentiment, and trending topics across social platforms. Schedule recurring checks with cron and store analysis results locally for privacy.
+
+## DevOps
+
+### Self-Healing Home Server
+**Difficulty:** Advanced
+An always-on infrastructure agent that monitors services, runs health checks via cron, and generates recovery scripts using the built-in shell emulator.
+
+### Log File Analyzer
+**Difficulty:** Intermediate
+Upload application logs to the browser workspace and analyze error patterns, frequency, and root causes. All log data stays local for security compliance.
+
+## Education
+
+### Pre-Build Idea Validator
+**Difficulty:** Intermediate
+Scan GitHub, Hacker News, npm, PyPI, and Product Hunt before building a new project. Validate your idea against existing solutions with web research via fetch_url.
+
+### Personal Knowledge Base
+**Difficulty:** Advanced
+Build a searchable knowledge base from URLs, articles, and notes. Store everything in OPFS and use the LLM to retrieve and synthesize information on demand.
+
 ## Communication
 
 ### Meeting Preparation
