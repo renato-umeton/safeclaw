@@ -13,6 +13,8 @@ import type { ToolDefinition } from '../types.js';
 type WebLLMEngine = any;
 
 const WEBLLM_MODELS: Record<string, { contextWindow: number; mlcId: string }> = {
+  'qwen3-0.6b': { contextWindow: 32_768, mlcId: 'Qwen3-0.6B-q4f16_1-MLC' },
+  'qwen3-1.7b': { contextWindow: 32_768, mlcId: 'Qwen3-1.7B-q4f16_1-MLC' },
   'qwen3-4b': { contextWindow: 32_768, mlcId: 'Qwen3-4B-q4f16_1-MLC' },
   'qwen3-30b': { contextWindow: 32_768, mlcId: 'Qwen3-30B-A3B-q4f16_1-MLC' },
 };

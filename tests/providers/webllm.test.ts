@@ -39,6 +39,9 @@ describe('WebLLMProvider', () => {
 
   it('returns context limit for known models', () => {
     expect(provider.getContextLimit('qwen3-4b')).toBe(32_768);
+    expect(provider.getContextLimit('qwen3-0.6b')).toBe(32_768);
+    expect(provider.getContextLimit('qwen3-1.7b')).toBe(32_768);
+    expect(provider.getContextLimit('qwen3-30b')).toBe(32_768);
   });
 
   it('returns default limit for unknown models', () => {
@@ -91,6 +94,30 @@ describe('WebLLMProvider', () => {
       expect(response.content).toHaveLength(1);
       expect(response.content[0]).toMatchObject({ type: 'text', text: 'Hello from WebLLM' });
       expect(response.stopReason).toBe('end_turn');
+    });
+
+    it('accepts smaller models (qwen3-0.6b)', async () => {
+      const freshProvider = new WebLLMProvider();
+      const response = await freshProvider.chat({
+        model: 'qwen3-0.6b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+      expect(response.content).toBeDefined();
+      expect(response.model).toBe('qwen3-0.6b');
+    });
+
+    it('accepts smaller models (qwen3-1.7b)', async () => {
+      const freshProvider = new WebLLMProvider();
+      const response = await freshProvider.chat({
+        model: 'qwen3-1.7b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+      expect(response.content).toBeDefined();
+      expect(response.model).toBe('qwen3-1.7b');
     });
 
     it('parses tool calls from content', async () => {
