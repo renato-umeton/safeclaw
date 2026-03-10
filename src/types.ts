@@ -186,7 +186,7 @@ export interface GroupInfo {
 // ClawHub Skill Hub types
 // ---------------------------------------------------------------------------
 
-/** A skill listing from the ClawHub registry */
+/** A normalized skill listing for the UI */
 export interface HubSkill {
   slug: string;
   name: string;
@@ -194,8 +194,9 @@ export interface HubSkill {
   author: string;
   version: string;
   downloads: number;
-  createdAt: string;
-  updatedAt: string;
+  stars: number;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /** Response from the ClawHub skills listing API */
@@ -204,9 +205,15 @@ export interface HubSkillsResponse {
   nextCursor: string | null;
 }
 
-/** Detailed skill info including SKILL.md content */
+/** Detailed skill info with owner and changelog */
 export interface HubSkillDetail extends HubSkill {
-  readme: string;
+  changelog: string;
+  avatarUrl: string;
+}
+
+/** Search result from ClawHub */
+export interface HubSearchResult {
+  items: HubSkill[];
 }
 
 /** Sort options for skill listing */
