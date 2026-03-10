@@ -35,6 +35,11 @@ tests/
   setup.ts               # Global test setup (polyfills, mocks)
   helpers.ts             # Shared test helpers (mock OPFS, etc.)
   **/*.test.{ts,tsx}     # Test files mirror src/ structure
+e2e/
+  app.spec.ts            # App shell boot & navigation E2E tests
+  chat.spec.ts           # Chat page E2E tests
+  settings.spec.ts       # Settings page E2E tests
+  pages.spec.ts          # Other pages (Files, Tasks, Use Cases, Skills) E2E tests
 scripts/
   check-version-docs.sh  # CI script: enforces doc updates on minor/major bumps
 ```
@@ -45,16 +50,20 @@ scripts/
 npm run dev            # Start Vite dev server (localhost:5173)
 npm run build          # TypeScript check + production build
 npm run typecheck      # TypeScript type checking only
-npm run test           # Run full test suite (vitest run)
-npm run test:watch     # Run tests in watch mode
-npm run test:coverage  # Run tests with coverage report
+npm run test           # Run full unit test suite (vitest run)
+npm run test:watch     # Run unit tests in watch mode
+npm run test:coverage  # Run unit tests with coverage report
+npm run test:e2e       # Run Playwright E2E tests (starts dev server automatically)
+npm run test:e2e:ui    # Run E2E tests with interactive Playwright UI
 ```
 
 ## Test-Driven Development (Mandatory)
 
-Every contribution must follow TDD. Write tests first, then implement.
+Every contribution must follow TDD. Write tests first, then implement. Both unit tests and E2E tests are required.
 
 ### Testing Stack
+
+#### Unit Tests (Vitest)
 
 - **Framework**: Vitest 4 with `happy-dom` environment
 - **React testing**: `@testing-library/react` + `@testing-library/user-event`
@@ -62,6 +71,13 @@ Every contribution must follow TDD. Write tests first, then implement.
 - **IndexedDB**: `fake-indexeddb` (auto-polyfilled in `tests/setup.ts`)
 - **OPFS**: Custom in-memory mock (see `tests/helpers.ts`)
 - **Process isolation**: Tests run in forked processes (`pool: 'forks'`)
+
+#### E2E Tests (Playwright)
+
+- **Framework**: Playwright with Chromium
+- **Config**: `playwright.config.ts` (auto-starts Vite dev server)
+- **Test directory**: `e2e/` (flat structure, `*.spec.ts` files)
+- **CI reporter**: `github` format; locally uses `html` reporter
 
 ### Coverage Requirements
 
@@ -143,13 +159,57 @@ it('renders the component and responds to interaction', async () => {
 });
 ```
 
+### E2E Test File Conventions
+
+- E2E test files live in the `e2e/` directory (flat structure).
+- File naming: `e2e/<feature>.spec.ts`.
+- E2E tests run against the real app in Chromium via Playwright.
+- The Vite dev server is started automatically by Playwright (configured in `playwright.config.ts`).
+
+### Writing E2E Tests — Patterns from This Codebase
+
+**Navigation test** (e.g., `e2e/app.spec.ts`):
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('can navigate to settings', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.navbar', { timeout: 10_000 });
+  await page.locator('.tabs >> text=Settings').click();
+  await expect(page).toHaveURL(/\/settings/);
+});
+```
+
+**Page interaction test** (e.g., `e2e/settings.spec.ts`):
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('can change theme', async ({ page }) => {
+  await page.goto('/settings');
+  await page.waitForSelector('text=Settings', { timeout: 10_000 });
+  const themeSelect = page.locator('select').filter({ hasText: 'System' }).first();
+  await themeSelect.selectOption('dark');
+  await expect(themeSelect).toHaveValue('dark');
+});
+```
+
 ### What to Test
 
+#### Unit Tests
 - All public functions and exports
 - Happy paths and edge cases (empty inputs, unicode, large data)
 - Error handling (invalid inputs, corrupt data, network failures)
 - State transitions (for stateful modules like the orchestrator)
 - Component rendering and user interactions (for React components)
+
+#### E2E Tests
+- App boot and initialization flow
+- Navigation between all pages
+- Settings page interactions (theme, provider, API key inputs)
+- Chat page rendering (prompt starters, input)
+- Page rendering for all routes (Files, Tasks, Use Cases, Skills)
 
 ## Code Style
 
@@ -205,9 +265,10 @@ bash scripts/check-version-docs.sh main
 
 ## Pull Request Checklist
 
-1. Tests written **before** implementation (TDD)
-2. `npm run test` passes
+1. Tests written **before** implementation (TDD) — both unit and E2E
+2. `npm run test` passes (unit tests)
 3. `npm run test:coverage` shows all metrics >= 90%
-4. `npm run typecheck` passes
-5. No new `any` types without justification
-6. If minor/major version bump: all four release doc files updated (see above)
+4. `npm run test:e2e` passes (E2E tests)
+5. `npm run typecheck` passes
+6. No new `any` types without justification
+7. If minor/major version bump: all four release doc files updated (see above)
