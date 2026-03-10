@@ -255,12 +255,12 @@ Minor and major version bumps require updates to **all four** of these files to 
 
 Patch releases (bug fixes only) do not require documentation updates.
 
-This is enforced by the `Version Docs Check` GitHub Actions workflow (`.github/workflows/version-docs.yml`), which runs `scripts/check-version-docs.sh` on every PR to `main`. The check compares `package.json` version against `origin/main` and fails the PR if any required doc file is missing from the diff.
+This is enforced by the `Version Docs Check` GitHub Actions workflow (`.github/workflows/version-docs.yml`), which runs `scripts/check-version-docs.sh` on every PR to `master`. The check compares `package.json` version against `origin/master` and fails the PR if any required doc file is missing from the diff.
 
 You can run the check locally before pushing:
 
 ```bash
-bash scripts/check-version-docs.sh main
+bash scripts/check-version-docs.sh master
 ```
 
 ## Pull Request Checklist
