@@ -7,6 +7,7 @@ import { Search } from 'lucide-react';
 import { USE_CASES, getAllCategories } from '../../use-cases.js';
 import { getUserProfile } from '../../db.js';
 import { getRecommendationsWithReasons } from '../../recommendations.js';
+import { fetchRemoteUseCases, mergeUseCases } from '../../use-cases-remote.js';
 import type { UseCase, ScoredUseCase, Difficulty, UserProfile } from '../../types.js';
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
@@ -93,6 +94,7 @@ export function UseCasesPage() {
   const [search, setSearch] = useState('');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [recommendations, setRecommendations] = useState<ScoredUseCase[]>([]);
+  const [allUseCases, setAllUseCases] = useState<UseCase[]>(USE_CASES);
 
   useEffect(() => {
     getUserProfile().then((p) => {
@@ -103,12 +105,18 @@ export function UseCasesPage() {
         setRecommendations(scoredRecs);
       }
     });
+
+    fetchRemoteUseCases().then((remote) => {
+      if (remote.length > 0) {
+        setAllUseCases((prev) => mergeUseCases(prev, remote));
+      }
+    });
   }, []);
 
-  const categories = getAllCategories();
+  const categories = [...new Set(allUseCases.map((uc) => uc.category))];
   const maxScore = recommendations.length > 0 ? recommendations[0].score : 0;
 
-  const filtered = USE_CASES.filter((uc) => {
+  const filtered = allUseCases.filter((uc) => {
     if (category && uc.category !== category) return false;
     if (difficulty && uc.difficulty !== difficulty) return false;
     if (search) {
