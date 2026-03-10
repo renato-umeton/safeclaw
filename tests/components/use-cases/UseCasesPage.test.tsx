@@ -1,17 +1,28 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { UseCasesPage } from '../../../src/components/use-cases/UseCasesPage';
 import { USE_CASES, getAllCategories } from '../../../src/use-cases';
+import type { UseCase } from '../../../src/types';
 
 const mockGetUserProfile = vi.fn().mockResolvedValue(null);
+const mockFetchRemoteUseCases = vi.fn().mockResolvedValue([]);
 
 vi.mock('../../../src/db', () => ({
   getUserProfile: (...args: any[]) => mockGetUserProfile(...args),
+}));
+
+vi.mock('../../../src/use-cases-remote', () => ({
+  fetchRemoteUseCases: (...args: any[]) => mockFetchRemoteUseCases(...args),
+  mergeUseCases: (s: UseCase[], r: UseCase[]) => {
+    const seen = new Set(s.map((uc: UseCase) => uc.title.toLowerCase()));
+    return [...s, ...r.filter((uc: UseCase) => !seen.has(uc.title.toLowerCase()))];
+  },
 }));
 
 describe('UseCasesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetUserProfile.mockResolvedValue(null);
+    mockFetchRemoteUseCases.mockResolvedValue([]);
   });
 
   describe('without profile', () => {
@@ -202,6 +213,75 @@ describe('UseCasesPage', () => {
         const matchBars = document.querySelectorAll('[data-testid="match-bar"]');
         expect(matchBars.length).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe('remote use cases', () => {
+    const remoteCase: UseCase = {
+      id: 'remote-expense-tracker',
+      title: 'Expense Tracker',
+      description: 'Parse receipts and track expenses',
+      category: 'Finance',
+      tags: ['community'],
+      difficulty: 'intermediate',
+    };
+
+    it('fetches remote use cases on mount', async () => {
+      await act(async () => { render(<UseCasesPage />); });
+      await waitFor(() => {
+        expect(mockFetchRemoteUseCases).toHaveBeenCalled();
+      });
+    });
+
+    it('renders remote use cases alongside static ones', async () => {
+      mockFetchRemoteUseCases.mockResolvedValue([remoteCase]);
+
+      await act(async () => { render(<UseCasesPage />); });
+
+      await waitFor(() => {
+        expect(screen.getByText('Expense Tracker')).toBeInTheDocument();
+      });
+      // Static cases should still be present
+      expect(screen.getByText(USE_CASES[0].title)).toBeInTheDocument();
+    });
+
+    it('shows community badge on remote use cases', async () => {
+      mockFetchRemoteUseCases.mockResolvedValue([remoteCase]);
+
+      await act(async () => { render(<UseCasesPage />); });
+
+      await waitFor(() => {
+        expect(screen.getByText('Expense Tracker')).toBeInTheDocument();
+      });
+      expect(screen.getAllByText('community').length).toBeGreaterThan(0);
+    });
+
+    it('filters apply to remote use cases too', async () => {
+      mockFetchRemoteUseCases.mockResolvedValue([remoteCase]);
+
+      await act(async () => { render(<UseCasesPage />); });
+
+      await waitFor(() => {
+        expect(screen.getByText('Expense Tracker')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/search/i);
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: 'Expense' } });
+      });
+
+      expect(screen.getByText('Expense Tracker')).toBeInTheDocument();
+      expect(screen.queryByText(USE_CASES[0].title)).toBeNull();
+    });
+
+    it('still renders all static cases when remote fetch fails', async () => {
+      mockFetchRemoteUseCases.mockResolvedValue([]);
+
+      await act(async () => { render(<UseCasesPage />); });
+
+      for (const uc of USE_CASES) {
+        expect(screen.getByText(uc.title)).toBeInTheDocument();
+      }
     });
   });
 });

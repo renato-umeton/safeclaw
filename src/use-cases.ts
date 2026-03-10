@@ -1,5 +1,7 @@
 // ---------------------------------------------------------------------------
-// SafeClaw — Curated use-case catalog
+// SafeClaw — 37 curated use-case workflows
+// Each workflow is sourced from real user experiences of positive impact,
+// collected via the awesome-openclaw-usecases community repository.
 // ---------------------------------------------------------------------------
 
 import type { UseCase, Difficulty } from './types.js';
@@ -31,6 +33,23 @@ export const USE_CASES: UseCase[] = [
     difficulty: 'advanced',
   },
 
+  {
+    id: 'auto-health-tracker',
+    title: 'Health & Symptom Tracker',
+    description: 'Track food intake and symptoms to identify triggers. Use cron-based scheduled reminders for daily check-ins, with all health data stored privately in your browser.',
+    category: 'Automation',
+    tags: ['health', 'tracking', 'cron', 'scheduling', 'privacy'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'auto-habit-coach',
+    title: 'Habit Tracker & Accountability Coach',
+    description: 'Daily check-ins tracking habits with adaptive tone and accountability. Memory retains streaks and progress across sessions.',
+    category: 'Automation',
+    tags: ['habits', 'tracking', 'productivity', 'scheduling', 'cron'],
+    difficulty: 'beginner',
+  },
+
   // --- Research ---
   {
     id: 'research-web-summary',
@@ -54,6 +73,23 @@ export const USE_CASES: UseCase[] = [
     description: 'Upload and analyze academic papers, extracting methodology, findings, and limitations with multi-provider LLM support for deeper analysis.',
     category: 'Research',
     tags: ['academic', 'papers', 'analysis', 'science'],
+    difficulty: 'advanced',
+  },
+
+  {
+    id: 'research-earnings-tracker',
+    title: 'AI Earnings Tracker',
+    description: 'Monitor tech company earnings with alerts and summaries. Fetch financial data with fetch_url and schedule recurring checks via cron.',
+    category: 'Research',
+    tags: ['finance', 'earnings', 'fetch', 'cron', 'analysis', 'scheduling'],
+    difficulty: 'advanced',
+  },
+  {
+    id: 'research-market-product',
+    title: 'Market Research & Product Factory',
+    description: 'Extract pain points from social media discussions and validate product ideas. Combine web research with local analysis for confidential market intelligence.',
+    category: 'Research',
+    tags: ['market', 'research', 'web', 'fetch', 'business', 'strategy'],
     difficulty: 'advanced',
   },
 
@@ -132,6 +168,136 @@ export const USE_CASES: UseCase[] = [
     description: 'Design API contracts, generate mock responses, and test endpoints with fetch_url — a complete API development workflow in the browser.',
     category: 'Development',
     tags: ['api', 'prototyping', 'testing', 'fetch', 'programming', 'github'],
+    difficulty: 'advanced',
+  },
+
+  // --- Productivity ---
+  {
+    id: 'prod-custom-morning-brief',
+    title: 'Custom Morning Brief',
+    description: 'Deliver a personalized daily briefing covering weather, calendar, news, and tasks. Schedule via cron to have it ready each morning in your browser.',
+    category: 'Productivity',
+    tags: ['briefing', 'cron', 'scheduling', 'news', 'productivity'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'prod-dynamic-dashboard',
+    title: 'Dynamic Dashboard',
+    description: 'Display real-time data from multiple sources simultaneously. Fetch APIs and render summaries in a unified view, all within the browser.',
+    category: 'Productivity',
+    tags: ['dashboard', 'api', 'fetch', 'data', 'productivity'],
+    difficulty: 'advanced',
+  },
+  {
+    id: 'prod-daily-news-digest',
+    title: 'Daily News Digest',
+    description: 'Aggregate and summarize tech news from multiple sources into a curated daily briefing. Schedule recurring fetches with cron and keep your reading list private.',
+    category: 'Productivity',
+    tags: ['news', 'summarization', 'cron', 'scheduling', 'reading', 'productivity'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'prod-inbox-declutter',
+    title: 'Inbox De-clutter',
+    description: 'Summarize newsletters and long email threads into condensed digests. Paste email content and get actionable summaries without forwarding to external services.',
+    category: 'Productivity',
+    tags: ['email', 'summarization', 'productivity', 'organization'],
+    difficulty: 'beginner',
+  },
+  {
+    id: 'prod-personal-crm',
+    title: 'Personal CRM',
+    description: 'Track contacts, interactions, and follow-ups in your browser workspace. Store relationship notes in OPFS files so contact data never leaves your device.',
+    category: 'Productivity',
+    tags: ['contacts', 'organization', 'files', 'productivity', 'communication'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'prod-meeting-notes',
+    title: 'Meeting Notes & Action Items',
+    description: 'Convert meeting transcripts into structured summaries with automatic task creation using the create_task tool for follow-up reminders.',
+    category: 'Productivity',
+    tags: ['meetings', 'notes', 'tasks', 'scheduling', 'productivity'],
+    difficulty: 'beginner',
+  },
+
+  // --- Creative ---
+  {
+    id: 'creative-content-pipeline',
+    title: 'Content Pipeline',
+    description: 'Automate idea scouting, research, and content tracking for video or blog production workflows. Combine web fetching with local file organization.',
+    category: 'Creative',
+    tags: ['content', 'video', 'blog', 'research', 'writing', 'productivity'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'creative-podcast-production',
+    title: 'Podcast Production',
+    description: 'Automate guest research, episode outlines, show notes, and promotional assets. Use fetch_url for research and the file system for organizing production materials.',
+    category: 'Creative',
+    tags: ['podcast', 'audio', 'writing', 'research', 'content'],
+    difficulty: 'advanced',
+  },
+
+  // --- Social ---
+  {
+    id: 'social-x-account-analysis',
+    title: 'X Account Analysis',
+    description: 'Obtain a qualitative assessment of your X (Twitter) account performance. Analyze engagement patterns and content strategy privately in the browser.',
+    category: 'Social',
+    tags: ['twitter', 'social-media', 'analysis', 'marketing'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'social-reddit-youtube-digest',
+    title: 'Reddit/YouTube Digest',
+    description: 'Summarize curated digests from favorite subreddits or YouTube channels. Fetch public feeds and produce condensed summaries of trending discussions.',
+    category: 'Social',
+    tags: ['reddit', 'youtube', 'summarization', 'social-media', 'curation'],
+    difficulty: 'beginner',
+  },
+  {
+    id: 'social-community-monitor',
+    title: 'Community Monitoring',
+    description: 'Track mentions, sentiment, and trending topics across social platforms. Schedule recurring checks and store analysis results locally for privacy.',
+    category: 'Social',
+    tags: ['social-media', 'monitoring', 'analysis', 'cron', 'scheduling'],
+    difficulty: 'advanced',
+  },
+
+  // --- DevOps ---
+  {
+    id: 'devops-self-healing-server',
+    title: 'Self-Healing Home Server',
+    description: 'An always-on infrastructure agent that monitors services, runs health checks via cron, and generates recovery scripts using the shell emulator.',
+    category: 'DevOps',
+    tags: ['infrastructure', 'monitoring', 'bash', 'cron', 'automation', 'scripting'],
+    difficulty: 'advanced',
+  },
+  {
+    id: 'devops-log-analyzer',
+    title: 'Log File Analyzer',
+    description: 'Upload application logs to the browser workspace and analyze error patterns, frequency, and root causes. All log data stays local for security compliance.',
+    category: 'DevOps',
+    tags: ['logs', 'analysis', 'debugging', 'files', 'privacy'],
+    difficulty: 'intermediate',
+  },
+
+  // --- Education ---
+  {
+    id: 'edu-idea-validator',
+    title: 'Pre-Build Idea Validator',
+    description: 'Scan GitHub, Hacker News, npm, PyPI, and Product Hunt before building a new project. Validate your idea against existing solutions with web research.',
+    category: 'Education',
+    tags: ['research', 'validation', 'web', 'fetch', 'github', 'programming'],
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'edu-knowledge-base',
+    title: 'Personal Knowledge Base',
+    description: 'Build a searchable knowledge base from URLs, articles, and notes. Store everything in OPFS and use the LLM to retrieve and synthesize information on demand.',
+    category: 'Education',
+    tags: ['knowledge', 'notes', 'files', 'research', 'reading', 'organization'],
     difficulty: 'advanced',
   },
 
