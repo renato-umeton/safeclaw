@@ -1,9 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify('2.0.0'),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   resolve: {
     alias: {
