@@ -16,9 +16,9 @@ test.describe('Chat page', () => {
   });
 
   test('displays all prompt starter cards', async ({ page }) => {
-    await expect(page.locator('text=Latest news')).toBeVisible();
-    await expect(page.locator('text=Generate a report')).toBeVisible();
-    await expect(page.locator('text=Map viewer')).toBeVisible();
+    await expect(page.locator('.font-medium', { hasText: 'Latest news' })).toBeVisible();
+    await expect(page.locator('.font-medium', { hasText: 'Generate a report' })).toBeVisible();
+    await expect(page.locator('.font-medium', { hasText: 'Map viewer' })).toBeVisible();
   });
 
   test('chat input is visible and enabled', async ({ page }) => {
