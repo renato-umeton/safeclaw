@@ -25,6 +25,7 @@ import {
   WEBSITE_URL,
   APP_VERSION,
 } from '../src/config';
+import pkg from '../package.json' with { type: 'json' };
 
 describe('config constants', () => {
   it('has expected default values', () => {
@@ -52,9 +53,10 @@ describe('config constants', () => {
     expect(WEBSITE_URL).toBe('https://safeclaw.umeton.com');
   });
 
-  it('exports APP_VERSION as a valid semver string', () => {
+  it('exports APP_VERSION matching package.json version', () => {
     expect(typeof APP_VERSION).toBe('string');
     expect(APP_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(APP_VERSION).toBe(pkg.version);
   });
 
   it('has sensible Telegram constants', () => {
