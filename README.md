@@ -128,7 +128,7 @@ SafeClaw supports a wide range of personal AI workflows. Here are some top examp
 | **Social** | Reddit/YouTube Digest | Summarize curated digests from favorite subreddits or YouTube channels |
 | **DevOps** | Self-Healing Home Server | Always-on infrastructure agent with SSH access, cron jobs, and self-healing capabilities |
 
-For the full list of 40+ use cases, see the [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) repository.
+For the full list of 37 use cases, see the [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) repository.
 
 ## Telegram
 

@@ -1,6 +1,6 @@
-# SafeClaw — 30 Curated Use-Case Workflows
+# SafeClaw — 37 Curated Use-Case Workflows
 
-A collection of 30 curated workflows drawn from real user experiences of positive impact, sourced from the [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) community. Each workflow highlights where SafeClaw's browser-native architecture provides unique advantages.
+A collection of 37 curated workflows drawn from real user experiences of positive impact, sourced from the [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) community. Each workflow highlights where SafeClaw's browser-native architecture provides unique advantages.
 
 ## Automation
 
@@ -16,6 +16,14 @@ Automatically sort, rename, and organize files in your browser workspace using t
 **Difficulty:** Advanced
 Use cron-based task scheduling to generate recurring reports. SafeClaw keeps running as an installable PWA even when the tab is backgrounded, something traditional web chatbots cannot do.
 
+### Health & Symptom Tracker
+**Difficulty:** Intermediate
+Track food intake and symptoms to identify triggers. Use cron-based scheduled reminders for daily check-ins, with all health data stored privately in your browser.
+
+### Habit Tracker & Accountability Coach
+**Difficulty:** Beginner
+Daily check-ins tracking habits with adaptive tone and accountability. The memory feature retains streaks and progress across sessions.
+
 ## Research
 
 ### Web Research & Summarization
@@ -29,6 +37,14 @@ Gather and compare product features, pricing, and reviews from multiple sources.
 ### Academic Paper Review
 **Difficulty:** Advanced
 Upload and analyze academic papers. SafeClaw's multi-provider LLM support lets you use Claude for deep analysis or switch to local models when working with embargoed research.
+
+### AI Earnings Tracker
+**Difficulty:** Advanced
+Monitor tech company earnings with alerts and summaries. Fetch financial data with fetch_url and schedule recurring checks via cron — all analysis stays private in your browser.
+
+### Market Research & Product Factory
+**Difficulty:** Advanced
+Extract pain points from social media discussions and validate product ideas. Combine web research with local analysis for confidential market intelligence.
 
 ## Content Creation
 
@@ -74,6 +90,14 @@ Design API contracts, generate mock responses, and test endpoints with fetch_url
 
 ## Productivity
 
+### Custom Morning Brief
+**Difficulty:** Intermediate
+Deliver a personalized daily briefing covering weather, calendar, news, and tasks. Schedule via cron to have it ready each morning in your browser.
+
+### Dynamic Dashboard
+**Difficulty:** Advanced
+Display real-time data from multiple sources simultaneously. Fetch APIs and render summaries in a unified view, all within the browser.
+
 ### Daily News Digest
 **Difficulty:** Intermediate
 Aggregate and summarize tech news from multiple sources into a curated daily briefing. Schedule recurring fetches with cron and keep your reading list private — all research stays in your browser.
@@ -101,6 +125,10 @@ Automate idea scouting, research, and content tracking for video or blog product
 Automate guest research, episode outlines, show notes, and promotional assets. Use fetch_url for research and the OPFS file system for organizing production materials.
 
 ## Social
+
+### X Account Analysis
+**Difficulty:** Intermediate
+Obtain a qualitative assessment of your X (Twitter) account performance. Analyze engagement patterns and content strategy privately in the browser.
 
 ### Reddit/YouTube Digest
 **Difficulty:** Beginner
