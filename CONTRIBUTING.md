@@ -11,13 +11,14 @@ git clone https://github.com/renato-umeton/safeclaw.git
 cd safeclaw
 npm install
 npm run dev          # Start dev server at localhost:5173
-npm run test         # Run the test suite
+npm run test         # Run the unit test suite
 npm run test:coverage # Verify coverage thresholds
+npm run test:e2e     # Run Playwright E2E tests
 ```
 
 ## Test-Driven Development (TDD) — Required
 
-**TDD is mandatory for all contributions.** Every pull request must include tests, and those tests should be written before the implementation code.
+**TDD is mandatory for all contributions.** Every pull request must include tests (both unit and E2E), and those tests should be written before the implementation code.
 
 ### The TDD Workflow
 
@@ -26,6 +27,7 @@ npm run test:coverage # Verify coverage thresholds
 3. **Write the minimal implementation** to make the test pass.
 4. **Refactor** if needed, keeping tests green.
 5. **Verify coverage** with `npm run test:coverage`.
+6. **Write E2E tests** for user-facing features (`npm run test:e2e`).
 
 ### Coverage Requirement: >90%
 
@@ -48,7 +50,9 @@ npm run test:coverage
 
 ### Testing Framework
 
-SafeClaw uses **Vitest** with the following supporting libraries:
+SafeClaw uses **Vitest** for unit tests and **Playwright** for E2E tests.
+
+#### Unit Tests (Vitest)
 
 - **`@testing-library/react`** + **`@testing-library/user-event`** for React component tests
 - **`@testing-library/jest-dom`** for DOM assertion matchers (e.g., `toBeInTheDocument()`)
@@ -57,14 +61,28 @@ SafeClaw uses **Vitest** with the following supporting libraries:
 
 Test globals (`describe`, `it`, `expect`, `vi`) are available without imports (configured via `vitest.config.ts`).
 
+#### E2E Tests (Playwright)
+
+- **`@playwright/test`** for browser-based end-to-end tests
+- Tests run against Chromium (configured in `playwright.config.ts`)
+- The Vite dev server starts automatically when running E2E tests
+- E2E tests live in the `e2e/` directory with `*.spec.ts` naming
+
 ### Test File Structure
 
-Tests live in the `tests/` directory and mirror the `src/` structure:
+Unit tests live in the `tests/` directory and mirror the `src/` structure. E2E tests live in the `e2e/` directory:
 
 ```
+# Unit tests
 src/crypto.ts                    → tests/crypto.test.ts
 src/providers/router.ts          → tests/providers/router.test.ts
 src/components/chat/ChatPage.tsx → tests/components/chat/ChatPage.test.tsx
+
+# E2E tests
+e2e/app.spec.ts                  — App boot & navigation
+e2e/chat.spec.ts                 — Chat page interactions
+e2e/settings.spec.ts             — Settings page interactions
+e2e/pages.spec.ts                — Other pages rendering
 ```
 
 ### Examples from the Codebase
@@ -150,13 +168,38 @@ it('renders the input and handles submission', async () => {
 });
 ```
 
+**Example 4: E2E test** (`e2e/settings.spec.ts`)
+
+E2E tests use Playwright to interact with the real app in a browser:
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('renders all settings sections', async ({ page }) => {
+  await page.goto('/settings');
+  await page.waitForSelector('text=Settings', { timeout: 10_000 });
+
+  await expect(page.locator('text=Appearance')).toBeVisible();
+  await expect(page.locator('text=LLM Provider')).toBeVisible();
+  await expect(page.locator('text=API Keys')).toBeVisible();
+});
+```
+
 ### What to Cover
 
+#### Unit Tests
 - **Happy paths**: Normal usage with expected inputs
 - **Edge cases**: Empty strings, unicode, very large inputs, boundary values
 - **Error handling**: Invalid inputs, corrupt data, missing dependencies
 - **State transitions**: For stateful modules (orchestrator, stores)
 - **User interactions**: Click, type, keyboard events for components
+
+#### E2E Tests
+- **App boot**: Loading state, initialization, redirect to settings/chat
+- **Navigation**: All page routes accessible via tabs
+- **Settings**: Theme changes, provider selection, API key inputs
+- **Chat**: Prompt starters, chat input, message sending
+- **Page rendering**: Every route renders its expected content
 
 ## Code Style
 
@@ -169,9 +212,10 @@ it('renders the input and handles submission', async () => {
 
 Before submitting your PR, verify:
 
-- [ ] Tests written **before** implementation (TDD)
-- [ ] `npm run test` — all tests pass
+- [ ] Tests written **before** implementation (TDD) — both unit and E2E
+- [ ] `npm run test` — all unit tests pass
 - [ ] `npm run test:coverage` — all metrics >= 90%
+- [ ] `npm run test:e2e` — all E2E tests pass
 - [ ] `npm run typecheck` — no type errors
 - [ ] No new `any` types without justification in a comment
 - [ ] Changes are focused and minimal — no unrelated refactors

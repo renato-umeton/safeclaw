@@ -16,6 +16,6 @@
     "rootDir": ".",
     "types": ["vitest/globals"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "vite-env.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "e2e/**/*.ts", "vite-env.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

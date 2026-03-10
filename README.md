@@ -144,7 +144,7 @@ Optional. Works entirely via HTTPS — no WebSockets or special protocols.
 
 ## Contributing
 
-We use **Test-Driven Development** — all contributions must include tests written before implementation, and coverage must stay above 90% on all metrics.
+We use **Test-Driven Development** — all contributions must include both unit tests (Vitest) and E2E tests (Playwright) written before implementation. Unit test coverage must stay above 90% on all metrics, and E2E tests must pass for all releases.
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Full contributor guide with TDD workflow, testing examples, and PR checklist
 - **[CLAUDE.md](CLAUDE.md)** — Agent-specific guide for AI contributors (repo layout, commands, test patterns)
@@ -156,8 +156,10 @@ npm run dev            # Vite dev server with HMR
 npm run build          # Production build -> dist/
 npm run preview        # Preview production build
 npm run typecheck      # TypeScript type checking
-npm run test           # Run test suite
-npm run test:coverage  # Run tests with coverage report (must be >90%)
+npm run test           # Run unit test suite
+npm run test:coverage  # Run unit tests with coverage report (must be >90%)
+npm run test:e2e       # Run Playwright E2E tests (starts dev server automatically)
+npm run test:e2e:ui    # Run E2E tests with interactive Playwright UI
 ```
 
 ## Deploy
