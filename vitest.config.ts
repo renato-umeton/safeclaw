@@ -44,6 +44,8 @@ export default defineConfig({
       './VersionSection.js': path.resolve(__dirname, 'src/components/settings/VersionSection.tsx'),
       '../../version-checker.js': path.resolve(__dirname, 'src/version-checker.ts'),
       './version-checker.js': path.resolve(__dirname, 'src/version-checker.ts'),
+      './skill-hub.js': path.resolve(__dirname, 'src/skill-hub.ts'),
+      '../../stores/skill-hub-store.js': path.resolve(__dirname, 'src/stores/skill-hub-store.ts'),
       'virtual:pwa-register': path.resolve(__dirname, 'tests/mocks/virtual-pwa-register.ts'),
     },
   },

@@ -181,3 +181,33 @@ export interface GroupInfo {
   lastActivity: number;
   unread: number;
 }
+
+// ---------------------------------------------------------------------------
+// ClawHub Skill Hub types
+// ---------------------------------------------------------------------------
+
+/** A skill listing from the ClawHub registry */
+export interface HubSkill {
+  slug: string;
+  name: string;
+  description: string;
+  author: string;
+  version: string;
+  downloads: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Response from the ClawHub skills listing API */
+export interface HubSkillsResponse {
+  items: HubSkill[];
+  nextCursor: string | null;
+}
+
+/** Detailed skill info including SKILL.md content */
+export interface HubSkillDetail extends HubSkill {
+  readme: string;
+}
+
+/** Sort options for skill listing */
+export type HubSortBy = 'downloads' | 'updatedAt' | 'createdAt';
