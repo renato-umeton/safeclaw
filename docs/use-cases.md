@@ -1,6 +1,6 @@
-# SafeClaw — Curated Use Cases
+# SafeClaw — 30 Curated Use-Case Workflows
 
-A guide to workflows where SafeClaw's browser-native architecture provides unique advantages.
+A collection of 30 curated workflows drawn from real user experiences of positive impact, sourced from the [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) community. Each workflow highlights where SafeClaw's browser-native architecture provides unique advantages.
 
 ## Automation
 

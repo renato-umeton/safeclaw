@@ -1,5 +1,7 @@
 // ---------------------------------------------------------------------------
-// SafeClaw — Curated use-case catalog
+// SafeClaw — 30 curated use-case workflows
+// Each workflow is sourced from real user experiences of positive impact,
+// collected via the awesome-openclaw-usecases community repository.
 // ---------------------------------------------------------------------------
 
 import type { UseCase, Difficulty } from './types.js';
