@@ -407,7 +407,7 @@
 
   <!-- Hero -->
   <section class="hero">
-    <div class="hero-badge">🔒 100% Browser-Native — No Server Required · v2.0.0</div>
+    <div class="hero-badge">🔒 100% Browser-Native — No Server Required · <span id="hero-version">v2.0.0</span></div>
     <h1>
       <span class="gradient">Browser-Native</span><br />
       Personal AI Assistant
@@ -726,11 +726,37 @@
   <!-- Footer -->
   <footer>
     <p>🛡️ <strong>SafeClaw</strong> — Browser-native personal AI assistant with multi-provider LLM support.</p>
-    <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">Latest release: v2.0.0 · March 2026</p>
+    <p id="footer-version" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">Latest release: v2.0.0 · March 2026</p>
     <p class="attribution">
       SafeClaw is a fork of <a href="https://github.com/sachaa/openbrowserclaw">OpenBrowserClaw</a> by sachaa. Licensed under MIT.
     </p>
   </footer>
 
+  <script>
+    // Fetch latest release version from GitHub and update badges
+    (function () {
+      var API_URL = 'https://api.github.com/repos/renato-umeton/safeclaw/releases/latest';
+      fetch(API_URL)
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function (data) {
+          var tag = data.tag_name || '';
+          var version = tag.startsWith('v') ? tag : 'v' + tag;
+          var date = data.published_at ? new Date(data.published_at) : null;
+
+          var heroEl = document.getElementById('hero-version');
+          if (heroEl) heroEl.textContent = version;
+
+          var footerEl = document.getElementById('footer-version');
+          if (footerEl && date) {
+            var month = date.toLocaleString(undefined, { month: 'long' });
+            var year = date.getFullYear();
+            footerEl.textContent = 'Latest release: ' + version + ' \u00B7 ' + month + ' ' + year;
+          } else if (footerEl) {
+            footerEl.textContent = 'Latest release: ' + version;
+          }
+        })
+        .catch(function () { /* keep hardcoded fallback */ });
+    })();
+  </script>
 </body>
 </html>
