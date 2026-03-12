@@ -56,9 +56,13 @@ vi.mock('../../../src/stores/theme-store', () => ({
 }));
 
 const mockRequestPersistentStorage = vi.fn().mockResolvedValue(true);
+const mockGetModelCacheEstimate = vi.fn().mockResolvedValue(0);
+const mockDeleteModelCaches = vi.fn().mockResolvedValue(undefined);
 vi.mock('../../../src/storage', () => ({
   getStorageEstimate: vi.fn().mockResolvedValue({ usage: 1024, quota: 1073741824 }),
   requestPersistentStorage: (...args: any[]) => mockRequestPersistentStorage(...args),
+  getModelCacheEstimate: (...args: any[]) => mockGetModelCacheEstimate(...args),
+  deleteModelCaches: (...args: any[]) => mockDeleteModelCaches(...args),
 }));
 
 // Mock DB to prevent IndexedDB calls during render
@@ -92,6 +96,7 @@ describe('SettingsPage', () => {
     mockProviderId = 'anthropic';
     mockModel = 'claude-sonnet-4-6';
     mockWebllmProgress = null;
+    mockGetModelCacheEstimate.mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -117,6 +122,16 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Storage')).toBeInTheDocument();
     expect(screen.getByText('Version')).toBeInTheDocument();
     expect(screen.getByText('Acknowledgements')).toBeInTheDocument();
+  });
+
+  // ---- Semantic grouping ----
+
+  it('renders semantic group headings', () => {
+    render(<SettingsPage />);
+    expect(screen.getByText('AI & Models')).toBeInTheDocument();
+    expect(screen.getByText('Personalization')).toBeInTheDocument();
+    expect(screen.getByText('Integrations')).toBeInTheDocument();
+    expect(screen.getByText('Storage & System')).toBeInTheDocument();
   });
 
   // ---- Theme selection ----
@@ -369,6 +384,85 @@ describe('SettingsPage', () => {
     });
 
     expect(mockRequestPersistentStorage).toHaveBeenCalled();
+  });
+
+  // ---- Storage breakdown ----
+
+  it('shows storage breakdown with model weights and other data', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(524288); // 512 KB
+
+    const { getStorageEstimate } = await import('../../../src/storage');
+    (getStorageEstimate as any).mockResolvedValue({ usage: 1048576, quota: 1073741824 }); // 1 MB
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Model weights')).toBeInTheDocument();
+      expect(screen.getByText('Other data')).toBeInTheDocument();
+      // Both model weights and other data show 512.0 KB
+      const kbTexts = screen.getAllByText('512.0 KB');
+      expect(kbTexts.length).toBe(2);
+    });
+  });
+
+  it('shows Delete Model Weights button when cache has data', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(1048576); // 1 MB
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Model Weights')).toBeInTheDocument();
+    });
+  });
+
+  it('does not show Delete Model Weights button when cache is empty', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(0);
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    expect(screen.queryByText('Delete Model Weights')).toBeNull();
+  });
+
+  it('calls deleteModelCaches and refreshes storage when delete is clicked', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(1048576);
+
+    const { getStorageEstimate } = await import('../../../src/storage');
+    (getStorageEstimate as any).mockResolvedValue({ usage: 2097152, quota: 1073741824 });
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Model Weights')).toBeInTheDocument();
+    });
+
+    // After delete, getStorageEstimate returns reduced usage
+    (getStorageEstimate as any).mockResolvedValue({ usage: 1048576, quota: 1073741824 });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete Model Weights'));
+    });
+
+    expect(mockDeleteModelCaches).toHaveBeenCalled();
+  });
+
+  it('shows re-download notice when model cache exists', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(1048576);
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Models will be re-downloaded/)).toBeInTheDocument();
+    });
   });
 
   // ---- Persistent storage already granted ----

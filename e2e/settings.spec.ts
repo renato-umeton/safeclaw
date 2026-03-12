@@ -20,6 +20,13 @@ test.describe('Settings page', () => {
     await expect(page.locator('.card-title', { hasText: 'Storage' })).toBeVisible();
   });
 
+  test('renders semantic group headings', async ({ page }) => {
+    await expect(page.locator('text=AI & Models')).toBeVisible();
+    await expect(page.locator('text=Personalization')).toBeVisible();
+    await expect(page.locator('text=Integrations')).toBeVisible();
+    await expect(page.locator('text=Storage & System')).toBeVisible();
+  });
+
   test('theme selector has system/light/dark options', async ({ page }) => {
     const themeSelect = page.locator('select').filter({ hasText: 'System' }).first();
     await expect(themeSelect).toBeVisible();
@@ -82,5 +89,10 @@ test.describe('Settings page', () => {
     await nameInput.clear();
     await nameInput.fill('TestBot');
     await expect(nameInput).toHaveValue('TestBot');
+  });
+
+  test('storage section shows breakdown labels', async ({ page }) => {
+    await expect(page.locator('text=Model weights')).toBeVisible();
+    await expect(page.locator('text=Other data')).toBeVisible();
   });
 });

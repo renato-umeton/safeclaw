@@ -269,4 +269,59 @@ describe('MessageBubble', () => {
     const p = container.querySelector('p.my-1');
     expect(p).toBeTruthy();
   });
+
+  // ---- Model badge display ----
+
+  it('displays model label on assistant messages with model field', () => {
+    const msg: StoredMessage = {
+      ...assistantMessage,
+      model: 'claude-sonnet-4-6',
+      providerId: 'anthropic',
+    };
+    const { container } = render(<MessageBubble message={msg} />);
+    expect(container.textContent).toContain('Sonnet 4.6');
+  });
+
+  it('does not display model badge on user messages', () => {
+    const msg: StoredMessage = {
+      ...userMessage,
+      model: 'claude-sonnet-4-6',
+    };
+    const { container } = render(<MessageBubble message={msg} />);
+    expect(container.querySelector('.chat-footer')).toBeNull();
+  });
+
+  it('does not display model badge when model field is missing', () => {
+    const { container } = render(<MessageBubble message={assistantMessage} />);
+    expect(container.querySelector('.chat-footer')).toBeNull();
+  });
+
+  it('shows raw model ID when model is not in labels map', () => {
+    const msg: StoredMessage = {
+      ...assistantMessage,
+      model: 'unknown-model-v1',
+      providerId: 'anthropic',
+    };
+    const { container } = render(<MessageBubble message={msg} />);
+    expect(container.textContent).toContain('unknown-model-v1');
+  });
+
+  it('displays known model labels correctly', () => {
+    const models = [
+      { id: 'claude-opus-4-6', label: 'Opus 4.6' },
+      { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+      { id: 'qwen3-4b', label: 'Qwen3 4B' },
+      { id: 'gemini-nano', label: 'Gemini Nano' },
+    ];
+
+    for (const { id, label } of models) {
+      const msg: StoredMessage = {
+        ...assistantMessage,
+        model: id,
+        providerId: 'anthropic',
+      };
+      const { container } = render(<MessageBubble message={msg} />);
+      expect(container.textContent).toContain(label);
+    }
+  });
 });

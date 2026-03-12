@@ -229,3 +229,48 @@ export async function getStorageEstimate(): Promise<{ usage: number; quota: numb
   }
   return { usage: 0, quota: 0 };
 }
+
+/**
+ * Estimate storage used by WebLLM model weight caches.
+ * WebLLM stores models in the Cache Storage API with cache names
+ * containing "webllm" or "mlc".
+ */
+export async function getModelCacheEstimate(): Promise<number> {
+  if (typeof caches === 'undefined') return 0;
+  try {
+    const keys = await caches.keys();
+    const modelCaches = keys.filter(
+      (k) => k.toLowerCase().includes('webllm') || k.toLowerCase().includes('mlc'),
+    );
+    let totalSize = 0;
+    for (const cacheName of modelCaches) {
+      const cache = await caches.open(cacheName);
+      const cacheKeys = await cache.keys();
+      for (const req of cacheKeys) {
+        const resp = await cache.match(req);
+        if (resp) {
+          const blob = await resp.blob();
+          totalSize += blob.size;
+        }
+      }
+    }
+    return totalSize;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Delete all WebLLM model weight caches to reclaim storage.
+ * Models will be re-downloaded on next use.
+ */
+export async function deleteModelCaches(): Promise<void> {
+  if (typeof caches === 'undefined') return;
+  const keys = await caches.keys();
+  const modelCaches = keys.filter(
+    (k) => k.toLowerCase().includes('webllm') || k.toLowerCase().includes('mlc'),
+  );
+  for (const cacheName of modelCaches) {
+    await caches.delete(cacheName);
+  }
+}
