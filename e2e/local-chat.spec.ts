@@ -24,19 +24,19 @@ test.describe('Local model chat', () => {
     await page.goto('/settings');
     await page.waitForSelector('h2:has-text("Settings")', { timeout: 10_000 });
 
-    // Select WebLLM (Local) as the provider
-    const providerSection = page.locator('.card').filter({ hasText: 'LLM Provider' });
-    const providerSelect = providerSection.locator('select').first();
+    // Select WebLLM (Local) as the provider (unified AI Provider card)
+    const providerCard = page.locator('.card').filter({ hasText: 'AI Provider' });
+    const providerSelect = providerCard.locator('select').first();
     await providerSelect.selectOption('webllm');
     await expect(providerSelect).toHaveValue('webllm');
 
     // Verify the smallest model (Qwen3 0.6B) is selected by default
-    const modelSelect = providerSection.locator('select').nth(1);
+    const modelSelect = providerCard.locator('select').nth(1);
     await expect(modelSelect).toHaveValue('qwen3-0.6b');
 
     // ---- Step 2: Set local preference to "Always local" ----
-    const localModelsSection = page.locator('.card').filter({ hasText: 'Local Models' });
-    const localPrefSelect = localModelsSection.locator('select');
+    // Local preference is now inside the same unified card
+    const localPrefSelect = providerCard.locator('select').filter({ hasText: 'Offline fallback' });
     await localPrefSelect.selectOption('always');
     await expect(localPrefSelect).toHaveValue('always');
 
@@ -80,13 +80,12 @@ test.describe('Local model chat', () => {
     await page.goto('/settings');
     await page.waitForSelector('h2:has-text("Settings")', { timeout: 10_000 });
 
-    const providerSection = page.locator('.card').filter({ hasText: 'LLM Provider' });
-    const providerSelect = providerSection.locator('select').first();
+    const providerCard = page.locator('.card').filter({ hasText: 'AI Provider' });
+    const providerSelect = providerCard.locator('select').first();
     await providerSelect.selectOption('webllm');
 
-    // Set "Always local" preference
-    const localModelsSection = page.locator('.card').filter({ hasText: 'Local Models' });
-    const localPrefSelect = localModelsSection.locator('select');
+    // Set "Always local" preference (inside the same card)
+    const localPrefSelect = providerCard.locator('select').filter({ hasText: 'Offline fallback' });
     await localPrefSelect.selectOption('always');
 
     // Navigate away and back
@@ -97,10 +96,11 @@ test.describe('Local model chat', () => {
     await page.waitForSelector('h2:has-text("Settings")', { timeout: 10_000 });
 
     // Verify settings were persisted
-    const providerSelectAfter = page.locator('.card').filter({ hasText: 'LLM Provider' }).locator('select').first();
+    const providerCardAfter = page.locator('.card').filter({ hasText: 'AI Provider' });
+    const providerSelectAfter = providerCardAfter.locator('select').first();
     await expect(providerSelectAfter).toHaveValue('webllm');
 
-    const localPrefAfter = page.locator('.card').filter({ hasText: 'Local Models' }).locator('select');
+    const localPrefAfter = providerCardAfter.locator('select').filter({ hasText: 'Always local' });
     await expect(localPrefAfter).toHaveValue('always');
   });
 });

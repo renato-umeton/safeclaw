@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// SafeClaw — Settings page (redesigned with semantic grouping)
+// SafeClaw — Settings page (unified AI provider card with semantic grouping)
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from 'react';
@@ -264,10 +264,12 @@ export function SettingsPage() {
         <h3 className="text-sm font-semibold uppercase tracking-wider opacity-50 mb-2">AI & Models</h3>
         <div className="space-y-4">
 
-          {/* ---- Provider & Model Selection ---- */}
+          {/* ---- Unified AI Provider card ---- */}
           <div className="card card-bordered bg-base-200">
             <div className="card-body p-4 sm:p-6 gap-3">
-              <h3 className="card-title text-base gap-2"><Bot className="w-4 h-4" /> LLM Provider</h3>
+              <h3 className="card-title text-base gap-2"><Bot className="w-4 h-4" /> AI Provider</h3>
+
+              {/* Provider & Model Selection */}
               <fieldset className="fieldset">
                 <legend className="fieldset-legend">Active Provider</legend>
                 <select
@@ -301,13 +303,10 @@ export function SettingsPage() {
               <p className="text-xs opacity-50">
                 Quality-first routing: cloud models by default, local fallback when offline or rate-limited.
               </p>
-            </div>
-          </div>
 
-          {/* ---- API Keys ---- */}
-          <div className="card card-bordered bg-base-200">
-            <div className="card-body p-4 sm:p-6 gap-3">
-              <h3 className="card-title text-base gap-2"><KeyRound className="w-4 h-4" /> API Keys</h3>
+              {/* ---- API Keys sub-section ---- */}
+              <div className="divider my-1" />
+              <h4 className="font-semibold text-sm flex items-center gap-2"><KeyRound className="w-4 h-4" /> API Keys</h4>
 
               {/* Anthropic */}
               <fieldset className="fieldset">
@@ -376,13 +375,10 @@ export function SettingsPage() {
               <p className="text-xs opacity-50">
                 API keys are encrypted and stored locally. They never leave your browser except to call the respective APIs.
               </p>
-            </div>
-          </div>
 
-          {/* ---- Local Models ---- */}
-          <div className="card card-bordered bg-base-200">
-            <div className="card-body p-4 sm:p-6 gap-3">
-              <h3 className="card-title text-base gap-2"><Cpu className="w-4 h-4" /> Local Models</h3>
+              {/* ---- Local Models sub-section ---- */}
+              <div className="divider my-1" />
+              <h4 className="font-semibold text-sm flex items-center gap-2"><Cpu className="w-4 h-4" /> Local Models</h4>
 
               {/* Hardware compatibility */}
               <div className="flex flex-wrap gap-2">
