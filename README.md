@@ -1,8 +1,6 @@
 # SafeClaw
 
-> **SafeClaw** is a fork of [OpenBrowserClaw](https://github.com/sachaa/openbrowserclaw) by sachaa, with modifications limiting scope to Chrome and implementing a multi-LLM provider strategy.
-
-> **Disclaimer:** SafeClaw is a personal, open-source project. It is **not** affiliated with any cryptocurrency, meme coin, token, or social media account. If you see coins, tokens, or social media profiles claiming association with this project, they are **not legitimate** and are not endorsed by the author(s). Stay safe and do your own research.
+> **Disclaimer:** SafeClaw is a personal, open-source project. It is **not** affiliated with any cryptocurrency, meme coin, token, or social media account. If you see coins, tokens, or social media profiles claiming association with this project, they are **not legitimate** and are not endorsed by the author(s). Stay safe and do your own research. This project stands on the shoulders of giants -- see the Acknowledgements for key contributions and kudos.
 
 **Website:** [safeclaw.umeton.com](https://safeclaw.umeton.com) | **App:** [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com)
 
