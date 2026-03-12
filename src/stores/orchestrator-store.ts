@@ -10,8 +10,9 @@ import type {
   ThinkingLogEntry,
 } from '../types.js';
 import type { Orchestrator } from '../orchestrator.js';
-import { DEFAULT_GROUP_ID } from '../config.js';
+import { DEFAULT_GROUP_ID, DEFAULT_MODEL, DEFAULT_PROVIDER } from '../config.js';
 import { getRecentMessages } from '../db.js';
+import type { ProviderId } from '../providers/types.js';
 
 interface WebLLMProgress {
   model: string;
@@ -31,6 +32,8 @@ interface OrchestratorStoreState {
   activeGroupId: string;
   ready: boolean;
   webllmProgress: WebLLMProgress | null;
+  providerId: ProviderId;
+  model: string;
 
   // --- actions ---
   sendMessage: (text: string) => void;
@@ -38,6 +41,8 @@ interface OrchestratorStoreState {
   compactContext: () => Promise<void>;
   clearError: () => void;
   loadHistory: () => Promise<void>;
+  setProviderId: (id: ProviderId) => Promise<void>;
+  setModel: (model: string) => Promise<void>;
 }
 
 let orchestratorInstance: Orchestrator | null = null;
@@ -58,6 +63,8 @@ export const useOrchestratorStore = create<OrchestratorStoreState>((set, get) =>
   activeGroupId: DEFAULT_GROUP_ID,
   ready: false,
   webllmProgress: null,
+  providerId: DEFAULT_PROVIDER as ProviderId,
+  model: DEFAULT_MODEL,
 
   sendMessage: (text) => {
     const orch = getOrchestrator();
@@ -75,6 +82,18 @@ export const useOrchestratorStore = create<OrchestratorStoreState>((set, get) =>
   },
 
   clearError: () => set({ error: null }),
+
+  setProviderId: async (id) => {
+    const orch = getOrchestrator();
+    await orch.setProviderId(id);
+    set({ providerId: id });
+  },
+
+  setModel: async (model) => {
+    const orch = getOrchestrator();
+    await orch.setModel(model);
+    set({ model });
+  },
 
   loadHistory: async () => {
     const msgs = await getRecentMessages(get().activeGroupId, 200);
@@ -156,6 +175,12 @@ export async function initOrchestratorStore(orch: Orchestrator): Promise<void> {
 
   orch.events.on('ready', () => {
     store.setState({ ready: true });
+  });
+
+  // Sync provider/model from orchestrator
+  store.setState({
+    providerId: orch.getProviderId(),
+    model: orch.getModel(),
   });
 
   // Load initial history

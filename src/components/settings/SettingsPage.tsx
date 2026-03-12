@@ -22,62 +22,10 @@ import { decryptValue } from '../../crypto.js';
 import { getOrchestrator, useOrchestratorStore } from '../../stores/orchestrator-store.js';
 import { useThemeStore, type ThemeChoice } from '../../stores/theme-store.js';
 import type { ProviderId, LocalPreference } from '../../providers/types.js';
+import { PROVIDERS } from '../../providers/models.js';
 import { ProfileSection } from './ProfileSection.js';
 import { VersionSection } from './VersionSection.js';
 import { AcknowledgementsSection } from './AcknowledgementsSection.js';
-
-// ---------------------------------------------------------------------------
-// Provider / model definitions
-// ---------------------------------------------------------------------------
-
-type ProviderInfo = {
-  id: ProviderId;
-  label: string;
-  isLocal: boolean;
-  models: { value: string; label: string }[];
-};
-
-const PROVIDERS: ProviderInfo[] = [
-  {
-    id: 'anthropic',
-    label: 'Anthropic Claude',
-    isLocal: false,
-    models: [
-      { value: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
-      { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
-      { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
-    ],
-  },
-  {
-    id: 'gemini',
-    label: 'Google Gemini',
-    isLocal: false,
-    models: [
-      { value: 'gemini-2.5-pro-preview-06-05', label: 'Gemini 2.5 Pro' },
-      { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-      { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
-    ],
-  },
-  {
-    id: 'webllm',
-    label: 'WebLLM (Local)',
-    isLocal: true,
-    models: [
-      { value: 'qwen3-0.6b', label: 'Qwen3 0.6B (400 MB)' },
-      { value: 'qwen3-1.7b', label: 'Qwen3 1.7B (1 GB)' },
-      { value: 'qwen3-4b', label: 'Qwen3 4B (2.5 GB)' },
-      { value: 'qwen3-30b', label: 'Qwen3 30B-A3B (16 GB)' },
-    ],
-  },
-  {
-    id: 'chrome-ai',
-    label: 'Chrome AI (Gemini Nano)',
-    isLocal: true,
-    models: [
-      { value: 'gemini-nano', label: 'Gemini Nano (built-in)' },
-    ],
-  },
-];
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';

@@ -4,6 +4,8 @@ import { ChatPage } from '../../../src/components/chat/ChatPage';
 const mockSendMessage = vi.fn();
 const mockClearError = vi.fn();
 const mockLoadHistory = vi.fn();
+const mockSetProviderId = vi.fn();
+const mockSetModel = vi.fn();
 
 // Default state — no messages, idle
 const defaultState = {
@@ -21,6 +23,10 @@ const defaultState = {
   clearError: mockClearError,
   loadHistory: mockLoadHistory,
   ready: true,
+  providerId: 'anthropic',
+  model: 'claude-sonnet-4-6',
+  setProviderId: mockSetProviderId,
+  setModel: mockSetModel,
 };
 
 let currentState: any = { ...defaultState };
@@ -164,5 +170,16 @@ describe('ChatPage', () => {
     currentState = { ...defaultState, webllmProgress: null };
     render(<ChatPage />);
     expect(screen.queryByText(/Downloading model/)).toBeNull();
+  });
+
+  it('shows model selector in the chat page', () => {
+    render(<ChatPage />);
+    expect(screen.getByLabelText('Select AI model')).toBeInTheDocument();
+  });
+
+  it('model selector shows the current model value', () => {
+    render(<ChatPage />);
+    const select = screen.getByLabelText('Select AI model') as HTMLSelectElement;
+    expect(select.value).toBe('anthropic:claude-sonnet-4-6');
   });
 });

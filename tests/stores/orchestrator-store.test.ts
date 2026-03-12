@@ -19,6 +19,8 @@ describe('useOrchestratorStore', () => {
       activeGroupId: 'br:main',
       ready: false,
       webllmProgress: null,
+      providerId: 'anthropic' as const,
+      model: 'claude-sonnet-4-6',
     });
   });
 
@@ -53,6 +55,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -82,6 +86,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -112,6 +118,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -134,6 +142,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -153,6 +163,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -185,6 +197,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -204,6 +218,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -226,6 +242,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -257,6 +275,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -284,6 +304,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -304,6 +326,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -324,6 +348,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -346,6 +372,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -367,6 +395,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -389,6 +419,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -408,6 +440,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn().mockResolvedValue(undefined),
         compactContext: vi.fn(),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
@@ -427,6 +461,8 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn().mockResolvedValue(undefined),
+        getProviderId: vi.fn().mockReturnValue('anthropic'),
+        getModel: vi.fn().mockReturnValue('claude-sonnet-4-6'),
       } as any;
 
       await initOrchestratorStore(mockOrch);
