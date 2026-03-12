@@ -16,6 +16,7 @@ import { useThemeStore, type ThemeChoice } from '../../stores/theme-store.js';
 import type { ProviderId, LocalPreference } from '../../providers/types.js';
 import { ProfileSection } from './ProfileSection.js';
 import { VersionSection } from './VersionSection.js';
+import { AcknowledgementsSection } from './AcknowledgementsSection.js';
 
 // ---------------------------------------------------------------------------
 // Provider / model definitions
@@ -546,6 +547,9 @@ export function SettingsPage() {
 
       {/* ---- Version ---- */}
       <VersionSection />
+
+      {/* ---- Acknowledgements ---- */}
+      <AcknowledgementsSection />
     </div>
   );
 }

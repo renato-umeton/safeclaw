@@ -81,6 +81,10 @@ vi.mock('../../../src/components/settings/VersionSection', () => ({
   VersionSection: () => <div data-testid="version-section">Version</div>,
 }));
 
+vi.mock('../../../src/components/settings/AcknowledgementsSection', () => ({
+  AcknowledgementsSection: () => <div data-testid="acknowledgements-section">Acknowledgements</div>,
+}));
+
 describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -112,6 +116,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Telegram Bot')).toBeInTheDocument();
     expect(screen.getByText('Storage')).toBeInTheDocument();
     expect(screen.getByText('Version')).toBeInTheDocument();
+    expect(screen.getByText('Acknowledgements')).toBeInTheDocument();
   });
 
   // ---- Theme selection ----
