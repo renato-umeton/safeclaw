@@ -13,8 +13,8 @@ test.describe('Settings page', () => {
   test('renders all settings sections', async ({ page }) => {
     await expect(page.locator('.card-title', { hasText: 'Appearance' })).toBeVisible();
     await expect(page.locator('.card-title', { hasText: 'AI Provider' })).toBeVisible();
-    await expect(page.locator('text=API Keys')).toBeVisible();
-    await expect(page.locator('text=Local Models')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'API Keys' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Local Models' })).toBeVisible();
     await expect(page.locator('.card-title', { hasText: 'Assistant Name' })).toBeVisible();
     await expect(page.locator('.card-title', { hasText: 'Telegram Bot' })).toBeVisible();
     await expect(page.locator('.card-title', { hasText: 'Storage' })).toBeVisible();
