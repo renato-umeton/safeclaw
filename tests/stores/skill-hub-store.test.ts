@@ -1,12 +1,16 @@
 import { useSkillHubStore } from '../../src/stores/skill-hub-store';
 import type { HubSkill } from '../../src/types';
 
-// Mock the skill-hub API module
-vi.mock('../../src/skill-hub', () => ({
-  searchSkills: vi.fn(),
-  listSkills: vi.fn(),
-  getSkillDetail: vi.fn(),
-}));
+// Mock the skill-hub API module but keep the real sortSkills
+vi.mock('../../src/skill-hub', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/skill-hub')>();
+  return {
+    ...actual,
+    searchSkills: vi.fn(),
+    listSkills: vi.fn(),
+    getSkillDetail: vi.fn(),
+  };
+});
 
 import { searchSkills, listSkills, getSkillDetail } from '../../src/skill-hub';
 
@@ -70,7 +74,9 @@ describe('useSkillHubStore', () => {
 
       const state = useSkillHubStore.getState();
       expect(state.skills).toHaveLength(2);
-      expect(state.skills[0].slug).toBe('test-skill');
+      // Skills are sorted by downloads descending; mockSkill2 has 200 > mockSkill's 100
+      expect(state.skills[0].slug).toBe('another-skill');
+      expect(state.skills[1].slug).toBe('test-skill');
       expect(state.loading).toBe(false);
       expect(state.error).toBeNull();
       expect(state.query).toBe('');
@@ -164,6 +170,9 @@ describe('useSkillHubStore', () => {
 
       const state = useSkillHubStore.getState();
       expect(state.skills).toHaveLength(2);
+      // Sorted by downloads: mockSkill2 (200) > mockSkill (100)
+      expect(state.skills[0].slug).toBe('another-skill');
+      expect(state.skills[1].slug).toBe('test-skill');
       expect(state.nextCursor).toBeNull();
       expect(listSkills).toHaveBeenCalledWith(expect.objectContaining({ cursor: 'cursor-1' }));
     });
@@ -237,6 +246,57 @@ describe('useSkillHubStore', () => {
 
       useSkillHubStore.getState().clearSelection();
       expect(useSkillHubStore.getState().selectedSkill).toBeNull();
+    });
+  });
+
+  describe('sorting', () => {
+    it('browse returns skills sorted by downloads descending, then alphabetically', async () => {
+      const skillA: HubSkill = { ...mockSkill, slug: 'alpha', name: 'Alpha', downloads: 50 };
+      const skillB: HubSkill = { ...mockSkill, slug: 'beta', name: 'Beta', downloads: 50 };
+      const skillC: HubSkill = { ...mockSkill, slug: 'top', name: 'Top', downloads: 500 };
+
+      vi.mocked(listSkills).mockResolvedValueOnce({
+        items: [skillB, skillC, skillA],
+        nextCursor: null,
+      });
+
+      await useSkillHubStore.getState().browse();
+
+      const names = useSkillHubStore.getState().skills.map(s => s.name);
+      expect(names).toEqual(['Top', 'Alpha', 'Beta']);
+    });
+
+    it('search returns skills sorted by downloads descending, then alphabetically', async () => {
+      const skillX: HubSkill = { ...mockSkill, slug: 'x', name: 'X-Ray', downloads: 10 };
+      const skillY: HubSkill = { ...mockSkill, slug: 'y', name: 'Yankee', downloads: 10 };
+
+      vi.mocked(searchSkills).mockResolvedValueOnce({
+        items: [skillY, skillX],
+        nextCursor: null,
+      });
+
+      await useSkillHubStore.getState().search('test');
+
+      const names = useSkillHubStore.getState().skills.map(s => s.name);
+      expect(names).toEqual(['X-Ray', 'Yankee']);
+    });
+
+    it('loadMore re-sorts the full merged list', async () => {
+      // Initial skill has fewer downloads than the one loaded later
+      const initial: HubSkill = { ...mockSkill, slug: 'low', name: 'Low', downloads: 5 };
+      const loaded: HubSkill = { ...mockSkill, slug: 'high', name: 'High', downloads: 999 };
+
+      useSkillHubStore.setState({ skills: [initial], nextCursor: 'c1', query: '' });
+
+      vi.mocked(listSkills).mockResolvedValueOnce({
+        items: [loaded],
+        nextCursor: null,
+      });
+
+      await useSkillHubStore.getState().loadMore();
+
+      const names = useSkillHubStore.getState().skills.map(s => s.name);
+      expect(names).toEqual(['High', 'Low']);
     });
   });
 

@@ -93,6 +93,21 @@ function normalizeSearchResult(raw: RawSearchResult): HubSkill {
 }
 
 // ---------------------------------------------------------------------------
+// Sorting
+// ---------------------------------------------------------------------------
+
+/**
+ * Sort skills by downloads descending; ties broken alphabetically by name.
+ * Returns a new array — does not mutate the input.
+ */
+export function sortSkills<T extends HubSkill>(skills: T[]): T[] {
+  return [...skills].sort((a, b) => {
+    if (b.downloads !== a.downloads) return b.downloads - a.downloads;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Public API functions
 // ---------------------------------------------------------------------------
 

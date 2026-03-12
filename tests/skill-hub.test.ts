@@ -2,8 +2,10 @@ import {
   searchSkills,
   listSkills,
   getSkillDetail,
+  sortSkills,
   CLAWHUB_API_BASE,
 } from '../src/skill-hub';
+import type { HubSkill } from '../src/types';
 import { mockFetchResponse } from './helpers';
 
 describe('skill-hub', () => {
@@ -224,6 +226,80 @@ describe('skill-hub', () => {
       const result = await getSkillDetail('test-skill');
       expect(result.version).toBe('');
       expect(result.changelog).toBe('');
+    });
+  });
+
+  describe('sortSkills', () => {
+    const makeSkill = (name: string, downloads: number): HubSkill => ({
+      slug: name.toLowerCase().replace(/\s+/g, '-'),
+      name,
+      description: '',
+      author: '',
+      version: '1.0.0',
+      downloads,
+      stars: 0,
+      createdAt: 0,
+      updatedAt: 0,
+    });
+
+    it('sorts skills by downloads descending', () => {
+      const skills = [
+        makeSkill('Low', 10),
+        makeSkill('High', 500),
+        makeSkill('Medium', 100),
+      ];
+      const sorted = sortSkills(skills);
+      expect(sorted.map(s => s.name)).toEqual(['High', 'Medium', 'Low']);
+    });
+
+    it('sorts alphabetically by name when downloads are equal', () => {
+      const skills = [
+        makeSkill('Zebra', 50),
+        makeSkill('Alpha', 50),
+        makeSkill('Mango', 50),
+      ];
+      const sorted = sortSkills(skills);
+      expect(sorted.map(s => s.name)).toEqual(['Alpha', 'Mango', 'Zebra']);
+    });
+
+    it('uses alphabetical tiebreaker only for equal downloads', () => {
+      const skills = [
+        makeSkill('Zebra', 100),
+        makeSkill('Alpha', 50),
+        makeSkill('Beta', 100),
+        makeSkill('Gamma', 50),
+      ];
+      const sorted = sortSkills(skills);
+      expect(sorted.map(s => s.name)).toEqual(['Beta', 'Zebra', 'Alpha', 'Gamma']);
+    });
+
+    it('returns empty array for empty input', () => {
+      expect(sortSkills([])).toEqual([]);
+    });
+
+    it('returns single-item array unchanged', () => {
+      const skills = [makeSkill('Only', 42)];
+      const sorted = sortSkills(skills);
+      expect(sorted).toHaveLength(1);
+      expect(sorted[0].name).toBe('Only');
+    });
+
+    it('does not mutate the original array', () => {
+      const skills = [makeSkill('B', 10), makeSkill('A', 20)];
+      const original = [...skills];
+      sortSkills(skills);
+      expect(skills[0].name).toBe(original[0].name);
+      expect(skills[1].name).toBe(original[1].name);
+    });
+
+    it('is case-insensitive for alphabetical sorting', () => {
+      const skills = [
+        makeSkill('banana', 50),
+        makeSkill('Apple', 50),
+        makeSkill('cherry', 50),
+      ];
+      const sorted = sortSkills(skills);
+      expect(sorted.map(s => s.name)).toEqual(['Apple', 'banana', 'cherry']);
     });
   });
 });

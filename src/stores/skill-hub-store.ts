@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import type { HubSkill, HubSkillDetail } from '../types.js';
-import { searchSkills, listSkills, getSkillDetail } from '../skill-hub.js';
+import { searchSkills, listSkills, getSkillDetail, sortSkills } from '../skill-hub.js';
 
 interface SkillHubStoreState {
   skills: HubSkill[];
@@ -36,7 +36,7 @@ export const useSkillHubStore = create<SkillHubStoreState>((set, get) => ({
     set({ loading: true, error: null, query: '' });
     try {
       const result = await listSkills({ limit: 20 });
-      set({ skills: result.items, nextCursor: result.nextCursor, loading: false });
+      set({ skills: sortSkills(result.items), nextCursor: result.nextCursor, loading: false });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
@@ -46,7 +46,7 @@ export const useSkillHubStore = create<SkillHubStoreState>((set, get) => ({
     set({ loading: true, error: null, query });
     try {
       const result = await searchSkills(query, limit);
-      set({ skills: result.items, nextCursor: result.nextCursor, loading: false });
+      set({ skills: sortSkills(result.items), nextCursor: result.nextCursor, loading: false });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
@@ -62,7 +62,7 @@ export const useSkillHubStore = create<SkillHubStoreState>((set, get) => ({
         ? await searchSkills(query)
         : await listSkills({ cursor: nextCursor, limit: 20 });
       set({
-        skills: [...skills, ...result.items],
+        skills: sortSkills([...skills, ...result.items]),
         nextCursor: result.nextCursor,
         loading: false,
       });
