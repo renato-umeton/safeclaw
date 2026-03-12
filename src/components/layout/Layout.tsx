@@ -9,6 +9,7 @@ import { FileViewerModal } from '../files/FileViewerModal.js';
 import { InstallBanner } from '../pwa/InstallBanner.js';
 import { UpdateToast } from '../pwa/UpdateToast.js';
 import { useFileViewerStore } from '../../stores/file-viewer-store.js';
+import { APP_VERSION } from '../../config.js';
 
 const navItems = [
   { to: '/chat', label: 'Chat', icon: MessageSquare },
@@ -29,8 +30,9 @@ export function Layout() {
       <div className="navbar bg-base-200 border-b border-base-300 safe-area-top px-4 min-h-14">
         <div className="navbar-start">
           <span className="text-xl font-bold select-none flex items-center gap-1.5">
-            <span className="text-lg">🛡️</span>
+            <img src="/favicon.svg" alt="SafeClaw" className="w-7 h-7 rounded-full" />
             <span className="hidden sm:inline">SafeClaw</span>
+            <span className="hidden sm:inline text-xs font-normal opacity-60">v{APP_VERSION}</span>
           </span>
         </div>
 

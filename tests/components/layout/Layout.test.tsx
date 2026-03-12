@@ -33,13 +33,18 @@ describe('Layout', () => {
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it('renders SafeClaw branding', () => {
+  it('renders SafeClaw branding with icon and version', () => {
     const { container } = render(
       <MemoryRouter>
         <Layout />
       </MemoryRouter>
     );
     expect(container.textContent).toContain('SafeClaw');
+    // Should use the favicon SVG icon instead of emoji
+    const icon = container.querySelector('img[src="/favicon.svg"]');
+    expect(icon).toBeTruthy();
+    // Should display version
+    expect(container.textContent).toMatch(/v\d+\.\d+\.\d+/);
   });
 
   it('renders nav items with correct labels', () => {
