@@ -27,6 +27,23 @@ export function AcknowledgementsSection() {
           and its built-in AI APIs, and the{' '}
           <a href="https://web.dev/progressive-web-apps/" className="link link-primary" target="_blank" rel="noopener noreferrer">PWA</a>{' '}
           standards that make installable browser apps possible.
+          {' '}The following open-source packages are also used here and much appreciated:{' '}
+          <a href="https://playwright.dev/" className="link link-primary" target="_blank" rel="noopener noreferrer">Playwright</a>,{' '}
+          <a href="https://vitest.dev/" className="link link-primary" target="_blank" rel="noopener noreferrer">Vitest</a>,{' '}
+          <a href="https://react.dev/" className="link link-primary" target="_blank" rel="noopener noreferrer">React</a>,{' '}
+          <a href="https://reactrouter.com/" className="link link-primary" target="_blank" rel="noopener noreferrer">React Router</a>,{' '}
+          <a href="https://github.com/remarkjs/react-markdown" className="link link-primary" target="_blank" rel="noopener noreferrer">React Markdown</a>,{' '}
+          <a href="https://vite.dev/" className="link link-primary" target="_blank" rel="noopener noreferrer">Vite</a>,{' '}
+          <a href="https://www.typescriptlang.org/" className="link link-primary" target="_blank" rel="noopener noreferrer">TypeScript</a>,{' '}
+          <a href="https://tailwindcss.com/" className="link link-primary" target="_blank" rel="noopener noreferrer">TailwindCSS</a>,{' '}
+          <a href="https://daisyui.com/" className="link link-primary" target="_blank" rel="noopener noreferrer">DaisyUI</a>,{' '}
+          <a href="https://github.com/pmndrs/zustand" className="link link-primary" target="_blank" rel="noopener noreferrer">Zustand</a>,{' '}
+          <a href="https://lucide.dev/" className="link link-primary" target="_blank" rel="noopener noreferrer">Lucide</a>,{' '}
+          <a href="https://testing-library.com/" className="link link-primary" target="_blank" rel="noopener noreferrer">Testing Library</a>,{' '}
+          <a href="https://unifiedjs.com/" className="link link-primary" target="_blank" rel="noopener noreferrer">unified</a>{' '}
+          (rehype & remark),{' '}
+          <a href="https://github.com/nicedoc/happy-dom" className="link link-primary" target="_blank" rel="noopener noreferrer">happy-dom</a>,{' '}
+          and <a href="https://github.com/nicedoc/fake-indexeddb" className="link link-primary" target="_blank" rel="noopener noreferrer">fake-indexeddb</a>.
         </p>
       </div>
     </div>
