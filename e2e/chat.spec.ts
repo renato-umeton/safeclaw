@@ -31,4 +31,21 @@ test.describe('Chat page', () => {
     await textarea.fill('Hello, SafeClaw!');
     await expect(textarea).toHaveValue('Hello, SafeClaw!');
   });
+
+  test('model selector is visible in chat', async ({ page }) => {
+    const modelSelect = page.locator('select[aria-label="Select AI model"]');
+    await expect(modelSelect).toBeVisible();
+  });
+
+  test('model selector shows provider groups', async ({ page }) => {
+    const modelSelect = page.locator('select[aria-label="Select AI model"]');
+    const optgroups = modelSelect.locator('optgroup');
+    await expect(optgroups).toHaveCount(4);
+  });
+
+  test('can change model in chat', async ({ page }) => {
+    const modelSelect = page.locator('select[aria-label="Select AI model"]');
+    await modelSelect.selectOption('gemini:gemini-2.0-flash');
+    await expect(modelSelect).toHaveValue('gemini:gemini-2.0-flash');
+  });
 });

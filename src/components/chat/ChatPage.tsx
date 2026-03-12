@@ -7,6 +7,7 @@ import { X, MessageSquare, Globe, FileText, MapPin, Download } from 'lucide-reac
 import { useOrchestratorStore } from '../../stores/orchestrator-store.js';
 import { MessageList } from './MessageList.js';
 import { ChatInput } from './ChatInput.js';
+import { ModelSelector } from './ModelSelector.js';
 import { TypingIndicator } from './TypingIndicator.js';
 import { ToolActivity } from './ToolActivity.js';
 import { ActivityLog } from './ActivityLog.js';
@@ -157,7 +158,10 @@ export function ChatPage() {
           </div>
         )}
 
-        {/* Input */}
+        {/* Model selector + Input */}
+        <div className="px-4 pt-1">
+          <ModelSelector />
+        </div>
         <ChatInput
           onSend={sendMessage}
           disabled={orchState !== 'idle'}
