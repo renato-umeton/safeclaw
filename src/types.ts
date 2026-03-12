@@ -16,6 +16,10 @@ export interface InboundMessage {
 export interface StoredMessage extends InboundMessage {
   isFromMe: boolean;
   isTrigger: boolean;
+  /** The model that generated this response (only on assistant messages) */
+  model?: string;
+  /** The provider that generated this response (only on assistant messages) */
+  providerId?: string;
 }
 
 /** Scheduled task */

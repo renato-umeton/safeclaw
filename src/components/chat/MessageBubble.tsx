@@ -51,6 +51,26 @@ const sanitizeSchema = {
   },
 };
 
+/** Map model IDs to short display labels */
+const MODEL_LABELS: Record<string, string> = {
+  'claude-opus-4-6': 'Opus 4.6',
+  'claude-sonnet-4-6': 'Sonnet 4.6',
+  'claude-haiku-4-5-20251001': 'Haiku 4.5',
+  'gemini-2.5-pro-preview-06-05': 'Gemini 2.5 Pro',
+  'gemini-2.0-flash': 'Gemini 2.0 Flash',
+  'gemini-2.0-flash-lite': 'Gemini Flash Lite',
+  'qwen3-0.6b': 'Qwen3 0.6B',
+  'qwen3-1.7b': 'Qwen3 1.7B',
+  'qwen3-4b': 'Qwen3 4B',
+  'qwen3-30b': 'Qwen3 30B',
+  'gemini-nano': 'Gemini Nano',
+};
+
+function getModelLabel(model?: string): string | null {
+  if (!model) return null;
+  return MODEL_LABELS[model] ?? model;
+}
+
 interface Props {
   message: StoredMessage;
 }
@@ -74,6 +94,11 @@ export function MessageBubble({ message }: Props) {
           isAssistant ? '' : 'chat-bubble-primary'
         }`}
       >
+        {isAssistant && message.model && (
+          <div className="chat-footer opacity-40 text-xs mt-0.5">
+            {getModelLabel(message.model)}
+          </div>
+        )}
         {isAssistant ? (
           <div className="chat-markdown">
             <ReactMarkdown

@@ -607,6 +607,8 @@ export class Orchestrator {
       channel: groupId.startsWith('tg:') ? 'telegram' : 'browser',
       isFromMe: true,
       isTrigger: false,
+      model: this.model,
+      providerId: this.providerId,
     };
     await saveMessage(stored);
 

@@ -7,6 +7,8 @@ import {
   requestPersistentStorage,
   getStorageEstimate,
   migrateFromLegacyOpfs,
+  getModelCacheEstimate,
+  deleteModelCaches,
 } from '../src/storage';
 
 const GROUP = 'br:test-storage';
@@ -355,6 +357,156 @@ describe('storage (OPFS)', () => {
         writable: true,
         configurable: true,
       });
+    });
+  });
+
+  describe('getModelCacheEstimate', () => {
+    // In-memory CacheStorage polyfill for happy-dom
+    let mockCacheStore: Map<string, Map<string, Response>>;
+    let origCaches: typeof globalThis.caches;
+
+    beforeEach(() => {
+      origCaches = globalThis.caches;
+      mockCacheStore = new Map();
+      const mockCaches = {
+        open: async (name: string) => {
+          if (!mockCacheStore.has(name)) mockCacheStore.set(name, new Map());
+          const store = mockCacheStore.get(name)!;
+          return {
+            put: async (req: Request | string, resp: Response) => {
+              const url = typeof req === 'string' ? req : req.url;
+              store.set(url, resp.clone());
+            },
+            keys: async () => [...store.keys()].map((u) => new Request(u)),
+            match: async (req: Request) => store.get(req.url)?.clone() ?? undefined,
+          };
+        },
+        keys: async () => [...mockCacheStore.keys()],
+        delete: async (name: string) => {
+          const had = mockCacheStore.has(name);
+          mockCacheStore.delete(name);
+          return had;
+        },
+      } as unknown as CacheStorage;
+      Object.defineProperty(globalThis, 'caches', { value: mockCaches, writable: true, configurable: true });
+    });
+
+    afterEach(() => {
+      if (origCaches !== undefined) {
+        Object.defineProperty(globalThis, 'caches', { value: origCaches, writable: true, configurable: true });
+      } else {
+        // @ts-expect-error — restore undefined
+        delete globalThis.caches;
+      }
+    });
+
+    it('returns 0 when caches API is undefined', async () => {
+      // @ts-expect-error — removing caches for testing
+      delete globalThis.caches;
+      const result = await getModelCacheEstimate();
+      expect(result).toBe(0);
+    });
+
+    it('returns 0 when no webllm/mlc caches exist', async () => {
+      const result = await getModelCacheEstimate();
+      expect(result).toBe(0);
+    });
+
+    it('estimates size of webllm caches', async () => {
+      const cache = await caches.open('webllm-test-cache');
+      await cache.put(
+        new Request('https://example.com/model.bin'),
+        new Response('x'.repeat(1024)),
+      );
+      const estimate = await getModelCacheEstimate();
+      expect(estimate).toBeGreaterThanOrEqual(1024);
+    });
+
+    it('estimates size of mlc caches', async () => {
+      const cache = await caches.open('mlc-model-cache');
+      await cache.put(
+        new Request('https://example.com/weights.bin'),
+        new Response('y'.repeat(512)),
+      );
+      const estimate = await getModelCacheEstimate();
+      expect(estimate).toBeGreaterThanOrEqual(512);
+    });
+
+    it('ignores non-model caches', async () => {
+      const cache = await caches.open('my-app-cache');
+      await cache.put(
+        new Request('https://example.com/app.js'),
+        new Response('z'.repeat(2048)),
+      );
+      const estimate = await getModelCacheEstimate();
+      expect(estimate).toBe(0);
+    });
+  });
+
+  describe('deleteModelCaches', () => {
+    let mockCacheStore: Map<string, Map<string, Response>>;
+    let origCaches: typeof globalThis.caches;
+
+    beforeEach(() => {
+      origCaches = globalThis.caches;
+      mockCacheStore = new Map();
+      const mockCaches = {
+        open: async (name: string) => {
+          if (!mockCacheStore.has(name)) mockCacheStore.set(name, new Map());
+          return {};
+        },
+        keys: async () => [...mockCacheStore.keys()],
+        delete: async (name: string) => {
+          const had = mockCacheStore.has(name);
+          mockCacheStore.delete(name);
+          return had;
+        },
+      } as unknown as CacheStorage;
+      Object.defineProperty(globalThis, 'caches', { value: mockCaches, writable: true, configurable: true });
+    });
+
+    afterEach(() => {
+      if (origCaches !== undefined) {
+        Object.defineProperty(globalThis, 'caches', { value: origCaches, writable: true, configurable: true });
+      } else {
+        // @ts-expect-error — restore undefined
+        delete globalThis.caches;
+      }
+    });
+
+    it('does nothing when caches API is undefined', async () => {
+      // @ts-expect-error — removing caches for testing
+      delete globalThis.caches;
+      await expect(deleteModelCaches()).resolves.toBeUndefined();
+    });
+
+    it('deletes webllm caches', async () => {
+      await caches.open('webllm-model-weights');
+      const keysBefore = await caches.keys();
+      expect(keysBefore).toContain('webllm-model-weights');
+
+      await deleteModelCaches();
+
+      const keysAfter = await caches.keys();
+      expect(keysAfter).not.toContain('webllm-model-weights');
+    });
+
+    it('deletes mlc caches', async () => {
+      await caches.open('mlc-engine-cache');
+      await deleteModelCaches();
+      const keys = await caches.keys();
+      expect(keys).not.toContain('mlc-engine-cache');
+    });
+
+    it('preserves non-model caches', async () => {
+      await caches.open('app-static-cache');
+      await caches.open('webllm-to-delete');
+
+      await deleteModelCaches();
+
+      const keys = await caches.keys();
+      expect(keys).toContain('app-static-cache');
+      expect(keys).not.toContain('webllm-to-delete');
     });
   });
 });
