@@ -113,7 +113,7 @@ describe('SettingsPage', () => {
   it('renders all settings sections', () => {
     render(<SettingsPage />);
     expect(screen.getByText('Appearance')).toBeInTheDocument();
-    expect(screen.getByText('LLM Provider')).toBeInTheDocument();
+    expect(screen.getByText('AI Provider')).toBeInTheDocument();
     expect(screen.getByText('API Keys')).toBeInTheDocument();
     expect(screen.getByText('Local Models')).toBeInTheDocument();
     expect(screen.getByText('Assistant Name')).toBeInTheDocument();
