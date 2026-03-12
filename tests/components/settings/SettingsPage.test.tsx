@@ -58,11 +58,15 @@ vi.mock('../../../src/stores/theme-store', () => ({
 const mockRequestPersistentStorage = vi.fn().mockResolvedValue(true);
 const mockGetModelCacheEstimate = vi.fn().mockResolvedValue(0);
 const mockDeleteModelCaches = vi.fn().mockResolvedValue(undefined);
+const mockListModelCaches = vi.fn().mockResolvedValue([]);
+const mockDeleteModelCache = vi.fn().mockResolvedValue(undefined);
 vi.mock('../../../src/storage', () => ({
   getStorageEstimate: vi.fn().mockResolvedValue({ usage: 1024, quota: 1073741824 }),
   requestPersistentStorage: (...args: any[]) => mockRequestPersistentStorage(...args),
   getModelCacheEstimate: (...args: any[]) => mockGetModelCacheEstimate(...args),
   deleteModelCaches: (...args: any[]) => mockDeleteModelCaches(...args),
+  listModelCaches: (...args: any[]) => mockListModelCaches(...args),
+  deleteModelCache: (...args: any[]) => mockDeleteModelCache(...args),
 }));
 
 // Mock DB to prevent IndexedDB calls during render
@@ -97,6 +101,8 @@ describe('SettingsPage', () => {
     mockModel = 'claude-sonnet-4-6';
     mockWebllmProgress = null;
     mockGetModelCacheEstimate.mockResolvedValue(0);
+    mockListModelCaches.mockResolvedValue([]);
+    mockDeleteModelCache.mockClear();
   });
 
   afterEach(() => {
@@ -407,7 +413,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('shows Delete Model Weights button when cache has data', async () => {
+  it('shows Delete All Model Weights button when cache has data', async () => {
     mockGetModelCacheEstimate.mockResolvedValue(1048576); // 1 MB
 
     await act(async () => {
@@ -415,18 +421,18 @@ describe('SettingsPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Model Weights')).toBeInTheDocument();
+      expect(screen.getByText('Delete All Model Weights')).toBeInTheDocument();
     });
   });
 
-  it('does not show Delete Model Weights button when cache is empty', async () => {
+  it('does not show Delete All Model Weights button when cache is empty', async () => {
     mockGetModelCacheEstimate.mockResolvedValue(0);
 
     await act(async () => {
       render(<SettingsPage />);
     });
 
-    expect(screen.queryByText('Delete Model Weights')).toBeNull();
+    expect(screen.queryByText('Delete All Model Weights')).toBeNull();
   });
 
   it('calls deleteModelCaches and refreshes storage when delete is clicked', async () => {
@@ -440,14 +446,14 @@ describe('SettingsPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Delete Model Weights')).toBeInTheDocument();
+      expect(screen.getByText('Delete All Model Weights')).toBeInTheDocument();
     });
 
     // After delete, getStorageEstimate returns reduced usage
     (getStorageEstimate as any).mockResolvedValue({ usage: 1048576, quota: 1073741824 });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete Model Weights'));
+      fireEvent.click(screen.getByText('Delete All Model Weights'));
     });
 
     expect(mockDeleteModelCaches).toHaveBeenCalled();
@@ -770,5 +776,116 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/Downloading/)).toBeInTheDocument();
     // Multiple progressbars exist (storage + model download)
     expect(screen.getAllByRole('progressbar').length).toBeGreaterThanOrEqual(2);
+  });
+
+  // ---- Individual model cache listing ----
+
+  it('lists individual cached models with sizes', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(3072);
+    mockListModelCaches.mockResolvedValue([
+      { cacheName: 'webllm/model/Qwen3-0.6B-q4f16_1-MLC', size: 1024 },
+      { cacheName: 'webllm/model/Qwen3-4B-q4f16_1-MLC', size: 2048 },
+    ]);
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Qwen3-0\.6B/)).toBeInTheDocument();
+      expect(screen.getByText(/Qwen3-4B/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows individual delete buttons for each cached model', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(2048);
+    mockListModelCaches.mockResolvedValue([
+      { cacheName: 'webllm/model/Qwen3-0.6B-q4f16_1-MLC', size: 1024 },
+      { cacheName: 'webllm/model/Qwen3-4B-q4f16_1-MLC', size: 1024 },
+    ]);
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      const deleteButtons = screen.getAllByLabelText(/Delete .* cache/);
+      expect(deleteButtons.length).toBe(2);
+    });
+  });
+
+  it('deletes individual model cache when its delete button is clicked', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(2048);
+    mockListModelCaches.mockResolvedValue([
+      { cacheName: 'webllm/model/Qwen3-0.6B-q4f16_1-MLC', size: 1024 },
+      { cacheName: 'webllm/model/Qwen3-4B-q4f16_1-MLC', size: 1024 },
+    ]);
+
+    const { getStorageEstimate } = await import('../../../src/storage');
+    (getStorageEstimate as any).mockResolvedValue({ usage: 2048, quota: 1073741824 });
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    // After delete, update mocks to reflect removal
+    mockListModelCaches.mockResolvedValue([
+      { cacheName: 'webllm/model/Qwen3-4B-q4f16_1-MLC', size: 1024 },
+    ]);
+    mockGetModelCacheEstimate.mockResolvedValue(1024);
+    (getStorageEstimate as any).mockResolvedValue({ usage: 1024, quota: 1073741824 });
+
+    await waitFor(() => {
+      expect(screen.getAllByLabelText(/Delete .* cache/).length).toBe(2);
+    });
+
+    await act(async () => {
+      const deleteButtons = screen.getAllByLabelText(/Delete .* cache/);
+      fireEvent.click(deleteButtons[0]);
+    });
+
+    expect(mockDeleteModelCache).toHaveBeenCalledWith('webllm/model/Qwen3-0.6B-q4f16_1-MLC');
+  });
+
+  it('shows model spec links for cached models', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(1024);
+    mockListModelCaches.mockResolvedValue([
+      { cacheName: 'webllm/model/Qwen3-0.6B-q4f16_1-MLC', size: 1024 },
+    ]);
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      const link = screen.getByRole('link', { name: /Qwen3-0\.6B/ });
+      expect(link).toHaveAttribute('href', expect.stringContaining('huggingface.co'));
+    });
+  });
+
+  it('does not show cached models list when no models are cached', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(0);
+    mockListModelCaches.mockResolvedValue([]);
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    expect(screen.queryByText('Downloaded Models')).toBeNull();
+  });
+
+  it('shows Downloaded Models heading when models are cached', async () => {
+    mockGetModelCacheEstimate.mockResolvedValue(1024);
+    mockListModelCaches.mockResolvedValue([
+      { cacheName: 'webllm/model/Qwen3-0.6B-q4f16_1-MLC', size: 1024 },
+    ]);
+
+    await act(async () => {
+      render(<SettingsPage />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Downloaded Models')).toBeInTheDocument();
+    });
   });
 });
