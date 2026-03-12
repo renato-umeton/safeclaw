@@ -208,4 +208,4 @@ This is a single-user local tool, not a multi-tenant platform.
 
 ## Acknowledgements
 
-SafeClaw is based on [OpenBrowserClaw](https://github.com/sachaa/openbrowserclaw) by sachaa, which itself is a browser-only reimagination of NanoClaw. We gratefully acknowledge the original project and its contributors.
+This project stands on the shoulders of giants: [OpenClaw](https://github.com/openclaw) for the original open-source personal AI assistant, [OpenBrowserClaw](https://github.com/sachaa/openbrowserclaw) by sachaa for the initial intuition and browser-native container architecture, [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) by hesamsheikh for the curated community workflows, [ClawHub](https://clawhub.ai) for the skill marketplace, [WebLLM](https://webllm.mlc.ai/) for local in-browser model inference, [Chromium](https://www.chromium.org/) and its built-in AI APIs, and the [PWA](https://web.dev/progressive-web-apps/) standards that make installable browser apps possible.
