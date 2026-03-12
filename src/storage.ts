@@ -274,3 +274,48 @@ export async function deleteModelCaches(): Promise<void> {
     await caches.delete(cacheName);
   }
 }
+
+/** Info about a single cached model */
+export interface ModelCacheInfo {
+  cacheName: string;
+  size: number;
+}
+
+/**
+ * List individual WebLLM/MLC model caches with their sizes.
+ * Returns one entry per cache (each cache typically corresponds to one model).
+ */
+export async function listModelCaches(): Promise<ModelCacheInfo[]> {
+  if (typeof caches === 'undefined') return [];
+  try {
+    const keys = await caches.keys();
+    const modelCacheNames = keys.filter(
+      (k) => k.toLowerCase().includes('webllm') || k.toLowerCase().includes('mlc'),
+    );
+    const results: ModelCacheInfo[] = [];
+    for (const cacheName of modelCacheNames) {
+      const cache = await caches.open(cacheName);
+      const cacheKeys = await cache.keys();
+      let size = 0;
+      for (const req of cacheKeys) {
+        const resp = await cache.match(req);
+        if (resp) {
+          const blob = await resp.blob();
+          size += blob.size;
+        }
+      }
+      results.push({ cacheName, size });
+    }
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Delete a single model cache by name.
+ */
+export async function deleteModelCache(cacheName: string): Promise<void> {
+  if (typeof caches === 'undefined') return;
+  await caches.delete(cacheName);
+}

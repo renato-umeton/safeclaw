@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import {
   Palette, KeyRound, Eye, EyeOff, Bot, MessageSquare,
-  Smartphone, HardDrive, Lock, Check, Cpu, Wifi, WifiOff, Download, Trash2,
+  Smartphone, HardDrive, Lock, Check, Cpu, Wifi, WifiOff, Download, Trash2, ExternalLink,
 } from 'lucide-react';
 import { getConfig } from '../../db.js';
 import { CONFIG_KEYS } from '../../config.js';
@@ -14,7 +14,10 @@ import {
   requestPersistentStorage,
   getModelCacheEstimate,
   deleteModelCaches,
+  listModelCaches,
+  deleteModelCache,
 } from '../../storage.js';
+import type { ModelCacheInfo } from '../../storage.js';
 import { decryptValue } from '../../crypto.js';
 import { getOrchestrator, useOrchestratorStore } from '../../stores/orchestrator-store.js';
 import { useThemeStore, type ThemeChoice } from '../../stores/theme-store.js';
@@ -84,6 +87,29 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${units[i]}`;
 }
 
+/**
+ * Extract a short display name from a cache name.
+ * e.g. "webllm/model/Qwen3-0.6B-q4f16_1-MLC" → "Qwen3-0.6B"
+ */
+function cacheDisplayName(cacheName: string): string {
+  // Try to extract model name from path-style cache names
+  const parts = cacheName.split('/');
+  const last = parts[parts.length - 1];
+  // Remove quantization suffix: "-q4f16_1-MLC" or similar
+  const cleaned = last.replace(/-q\d+f\d+_\d+-MLC$/i, '');
+  return cleaned || last;
+}
+
+/**
+ * Build a HuggingFace URL for the MLC model.
+ * e.g. "webllm/model/Qwen3-0.6B-q4f16_1-MLC" → "https://huggingface.co/mlc-ai/Qwen3-0.6B-q4f16_1-MLC"
+ */
+function cacheModelUrl(cacheName: string): string {
+  const parts = cacheName.split('/');
+  const modelId = parts[parts.length - 1];
+  return `https://huggingface.co/mlc-ai/${modelId}`;
+}
+
 export function SettingsPage() {
   const orch = getOrchestrator();
 
@@ -123,6 +149,7 @@ export function SettingsPage() {
   const [isPersistent, setIsPersistent] = useState(false);
   const [modelCacheSize, setModelCacheSize] = useState(0);
   const [deletingCache, setDeletingCache] = useState(false);
+  const [cachedModels, setCachedModels] = useState<ModelCacheInfo[]>([]);
 
   // Theme
   const { theme, setTheme } = useThemeStore();
@@ -161,9 +188,11 @@ export function SettingsPage() {
         setIsPersistent(await navigator.storage.persisted());
       }
 
-      // Model cache size
+      // Model cache size and individual models
       const cacheSize = await getModelCacheEstimate();
       setModelCacheSize(cacheSize);
+      const models = await listModelCaches();
+      setCachedModels(models);
 
       // Hardware checks
       setHasWebGPU('gpu' in navigator);
@@ -243,11 +272,24 @@ export function SettingsPage() {
     setDeletingCache(true);
     await deleteModelCaches();
     setModelCacheSize(0);
+    setCachedModels([]);
     // Refresh total storage estimate
     const est = await getStorageEstimate();
     setStorageUsage(est.usage);
     setStorageQuota(est.quota);
     setDeletingCache(false);
+  }
+
+  async function handleDeleteSingleModelCache(cacheName: string) {
+    await deleteModelCache(cacheName);
+    // Refresh cache list and sizes
+    const models = await listModelCaches();
+    setCachedModels(models);
+    const cacheSize = await getModelCacheEstimate();
+    setModelCacheSize(cacheSize);
+    const est = await getStorageEstimate();
+    setStorageUsage(est.usage);
+    setStorageQuota(est.quota);
   }
 
   const storagePercent = storageQuota > 0 ? (storageUsage / storageQuota) * 100 : 0;
@@ -597,7 +639,39 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              {/* Delete model weights */}
+              {/* Individual cached models */}
+              {cachedModels.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Downloaded Models</h4>
+                  <div className="space-y-2">
+                    {cachedModels.map((m) => (
+                      <div key={m.cacheName} className="flex items-center justify-between gap-2 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <a
+                            href={cacheModelUrl(m.cacheName)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="link link-hover flex items-center gap-1 truncate"
+                          >
+                            {cacheDisplayName(m.cacheName)}
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          </a>
+                          <span className="text-xs opacity-60 font-mono flex-shrink-0">{formatBytes(m.size)}</span>
+                        </div>
+                        <button
+                          className="btn btn-ghost btn-xs text-error"
+                          aria-label={`Delete ${cacheDisplayName(m.cacheName)} cache`}
+                          onClick={() => handleDeleteSingleModelCache(m.cacheName)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Delete all model weights */}
               {modelCacheSize > 0 && (
                 <button
                   className="btn btn-outline btn-error btn-sm gap-2"
@@ -605,7 +679,7 @@ export function SettingsPage() {
                   disabled={deletingCache}
                 >
                   <Trash2 className="w-4 h-4" />
-                  {deletingCache ? 'Deleting...' : 'Delete Model Weights'}
+                  {deletingCache ? 'Deleting...' : 'Delete All Model Weights'}
                 </button>
               )}
               {modelCacheSize > 0 && (
