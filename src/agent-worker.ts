@@ -7,10 +7,6 @@
 //
 // Uses the provider abstraction layer to support multiple LLM backends
 // (Anthropic, Gemini, WebLLM) through a unified interface.
-//
-// Multi-threading features:
-// - Parallel tool execution: multiple tool_use blocks run concurrently
-// - AbortController-based cancellation: cancel in-flight invocations
 
 import type { WorkerInbound, WorkerOutbound, InvokePayload, CompactPayload, ConversationMessage, ThinkingLogEntry, WorkerProviderConfig } from './types.js';
 import { TOOL_DEFINITIONS } from './tools.js';
@@ -61,33 +57,6 @@ function getOrCreateProvider(config: WorkerProviderConfig): LLMProvider {
 }
 
 // ---------------------------------------------------------------------------
-// Cancellation — per-group AbortControllers
-// ---------------------------------------------------------------------------
-
-const activeAbortControllers = new Map<string, AbortController>();
-
-function getAbortSignal(groupId: string): AbortSignal {
-  // Cancel any existing invocation for this group
-  activeAbortControllers.get(groupId)?.abort();
-
-  const controller = new AbortController();
-  activeAbortControllers.set(groupId, controller);
-  return controller.signal;
-}
-
-function cancelGroup(groupId: string): void {
-  const controller = activeAbortControllers.get(groupId);
-  if (controller) {
-    controller.abort();
-    activeAbortControllers.delete(groupId);
-  }
-}
-
-function cleanupAbort(groupId: string): void {
-  activeAbortControllers.delete(groupId);
-}
-
-// ---------------------------------------------------------------------------
 // Message handler
 // ---------------------------------------------------------------------------
 
@@ -105,7 +74,7 @@ self.onmessage = async (event: MessageEvent<WorkerInbound>) => {
       await handlePreload(payload as { providerConfig: WorkerProviderConfig });
       break;
     case 'cancel':
-      cancelGroup(payload.groupId);
+      // TODO: AbortController-based cancellation
       break;
   }
 };
@@ -142,7 +111,6 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
   const { model, maxTokens } = providerConfig;
 
   const provider = getOrCreateProvider(providerConfig);
-  const abortSignal = getAbortSignal(groupId);
 
   post({ type: 'typing', payload: { groupId } });
   log(groupId, 'info', 'Starting', `Provider: ${provider.name} · Model: ${model} · Max tokens: ${maxTokens}`);
@@ -153,13 +121,6 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
     const maxIterations = provider.isLocal ? 10 : 25; // Lower limit for local models
 
     while (iterations < maxIterations) {
-      // Check for cancellation before each iteration
-      if (abortSignal.aborted) {
-        post({ type: 'response', payload: { groupId, text: 'Cancelled.' } });
-        cleanupAbort(groupId);
-        return;
-      }
-
       iterations++;
 
       const request: ChatRequest = {
@@ -173,13 +134,6 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
       log(groupId, 'api-call', `API call #${iterations}`, `${currentMessages.length} messages in context`);
 
       const result = await provider.chat(request);
-
-      // Check for cancellation after API call
-      if (abortSignal.aborted) {
-        post({ type: 'response', payload: { groupId, text: 'Cancelled.' } });
-        cleanupAbort(groupId);
-        return;
-      }
 
       // Emit token usage
       if (result.usage) {
@@ -205,53 +159,38 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
       }
 
       if (result.stopReason === 'tool_use') {
-        // Collect all tool_use blocks
-        const toolBlocks = result.content.filter(
-          (b): b is { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> } =>
-            b.type === 'tool_use',
-        );
+        // Execute all tool calls
+        const toolResults = [];
+        for (const block of result.content) {
+          if (block.type === 'tool_use') {
+            const inputPreview = JSON.stringify(block.input);
+            const inputShort = inputPreview.length > 300 ? inputPreview.slice(0, 300) + '...' : inputPreview;
+            log(groupId, 'tool-call', `Tool: ${block.name}`, inputShort);
 
-        // Log and mark all tools as running
-        for (const block of toolBlocks) {
-          const inputPreview = JSON.stringify(block.input);
-          const inputShort = inputPreview.length > 300 ? inputPreview.slice(0, 300) + '...' : inputPreview;
-          log(groupId, 'tool-call', `Tool: ${block.name}`, inputShort);
+            post({
+              type: 'tool-activity',
+              payload: { groupId, tool: block.name, status: 'running' },
+            });
 
-          post({
-            type: 'tool-activity',
-            payload: { groupId, tool: block.name, status: 'running' },
-          });
-        }
+            const output = await executeTool(block.name, block.input, groupId);
 
-        // Execute all tool calls in parallel
-        const toolPromises = toolBlocks.map(async (block) => {
-          const output = await executeTool(block.name, block.input, groupId);
+            const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
+            const outputShort = outputStr.length > 500 ? outputStr.slice(0, 500) + '...' : outputStr;
+            log(groupId, 'tool-result', `Result: ${block.name}`, outputShort);
 
-          const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
-          const outputShort = outputStr.length > 500 ? outputStr.slice(0, 500) + '...' : outputStr;
-          log(groupId, 'tool-result', `Result: ${block.name}`, outputShort);
+            post({
+              type: 'tool-activity',
+              payload: { groupId, tool: block.name, status: 'done' },
+            });
 
-          post({
-            type: 'tool-activity',
-            payload: { groupId, tool: block.name, status: 'done' },
-          });
-
-          return {
-            type: 'tool_result' as const,
-            tool_use_id: block.id,
-            content: typeof output === 'string'
-              ? output.slice(0, 100_000)
-              : JSON.stringify(output).slice(0, 100_000),
-          };
-        });
-
-        const toolResults = await Promise.all(toolPromises);
-
-        // Check for cancellation after tool execution
-        if (abortSignal.aborted) {
-          post({ type: 'response', payload: { groupId, text: 'Cancelled.' } });
-          cleanupAbort(groupId);
-          return;
+            toolResults.push({
+              type: 'tool_result' as const,
+              tool_use_id: block.id,
+              content: typeof output === 'string'
+                ? output.slice(0, 100_000)
+                : JSON.stringify(output).slice(0, 100_000),
+            });
+          }
         }
 
         // Continue the conversation with tool results
@@ -271,7 +210,6 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
         const cleaned = text.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
 
         post({ type: 'response', payload: { groupId, text: cleaned || '(no response)' } });
-        cleanupAbort(groupId);
         return;
       }
     }
@@ -284,12 +222,10 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
         text: `Warning: Reached maximum tool-use iterations (${maxIterations}). Stopping to avoid excessive API usage.`,
       },
     });
-    cleanupAbort(groupId);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     const errorCode = (err as any)?.statusCode;
     post({ type: 'error', payload: { groupId, error: message, errorCode } });
-    cleanupAbort(groupId);
   }
 }
 
