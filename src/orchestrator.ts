@@ -5,7 +5,7 @@
 // The orchestrator is the main thread coordinator. It manages:
 // - State machine (idle -> thinking -> responding)
 // - Message queue and routing
-// - Agent worker lifecycle
+// - Worker pool lifecycle (concurrent agent invocations)
 // - Channel coordination
 // - Task scheduling
 // - Multi-provider LLM configuration
@@ -49,6 +49,8 @@ import { Router } from './router.js';
 import { TaskScheduler } from './task-scheduler.js';
 import { ulid } from './ulid.js';
 import type { ProviderId, LocalPreference } from './providers/types.js';
+import { WorkerPool } from './worker-pool.js';
+import type { WorkerHandle } from './worker-pool.js';
 
 // ---------------------------------------------------------------------------
 // Event emitter for UI updates
@@ -100,7 +102,7 @@ export class Orchestrator {
 
   private router!: Router;
   private scheduler!: TaskScheduler;
-  private agentWorker!: Worker;
+  private workerPool!: WorkerPool;
   private state: OrchestratorState = 'idle';
   private triggerPattern!: RegExp;
   private assistantName: string = ASSISTANT_NAME;
@@ -113,8 +115,11 @@ export class Orchestrator {
   private localPreference: LocalPreference = 'offline-only';
 
   private messageQueue: InboundMessage[] = [];
-  private processing = false;
+  /** Groups currently being processed — enables per-group concurrency */
+  private activeGroups = new Set<string>();
   private pendingScheduledTasks = new Set<string>();
+  /** Maps groupId → WorkerHandle for releasing after response */
+  private activeHandles = new Map<string, WorkerHandle>();
 
   /**
    * Initialize the orchestrator. Must be called before anything else.
@@ -177,17 +182,17 @@ export class Orchestrator {
       this.telegram.start();
     }
 
-    // Set up agent worker
-    this.agentWorker = new Worker(
+    // Set up worker pool (up to 3 concurrent agent workers)
+    this.workerPool = new WorkerPool(
       new URL('./agent-worker.ts', import.meta.url),
-      { type: 'module' },
+      { maxWorkers: 3 },
     );
-    this.agentWorker.onmessage = (event: MessageEvent<WorkerOutbound>) => {
-      this.handleWorkerMessage(event.data);
-    };
-    this.agentWorker.onerror = (err) => {
+    this.workerPool.onMessage((msg: WorkerOutbound) => {
+      this.handleWorkerMessage(msg);
+    });
+    this.workerPool.onError((err) => {
       console.error('Agent worker error:', err);
-    };
+    });
 
     // Set up task scheduler
     this.scheduler = new TaskScheduler((groupId, prompt) =>
@@ -317,10 +322,16 @@ export class Orchestrator {
    * Triggers progress events via the webllm-progress event.
    */
   preloadModel(): void {
-    this.agentWorker.postMessage({
-      type: 'preload',
-      payload: { providerConfig: this.buildProviderConfig() },
-    });
+    // Use a dedicated worker for preloading — acquire temporarily
+    const handle = this.workerPool.acquire('__preload__');
+    if (handle) {
+      this.workerPool.postMessage(handle, {
+        type: 'preload',
+        payload: { providerConfig: this.buildProviderConfig() },
+      });
+      // Release immediately — preload is fire-and-forget
+      this.workerPool.release(handle);
+    }
   }
 
   /**
@@ -339,6 +350,19 @@ export class Orchestrator {
   }
 
   /**
+   * Cancel an in-progress agent invocation for a group.
+   */
+  cancelInvocation(groupId: string): void {
+    const handle = this.activeHandles.get(groupId);
+    if (handle) {
+      this.workerPool.postMessage(handle, {
+        type: 'cancel',
+        payload: { groupId },
+      });
+    }
+  }
+
+  /**
    * Compact (summarize) the current context to reduce token usage.
    */
   async compactContext(groupId: string = DEFAULT_GROUP_ID): Promise<void> {
@@ -350,7 +374,7 @@ export class Orchestrator {
       return;
     }
 
-    if (this.state !== 'idle') {
+    if (this.activeGroups.has(groupId)) {
       this.events.emit('error', {
         groupId,
         error: 'Cannot compact while processing. Wait for the current response to finish.',
@@ -372,7 +396,19 @@ export class Orchestrator {
     const messages = await buildConversationMessages(groupId, CONTEXT_WINDOW_SIZE);
     const systemPrompt = buildSystemPrompt(this.assistantName, memory);
 
-    this.agentWorker.postMessage({
+    const handle = this.workerPool.acquire(groupId);
+    if (!handle) {
+      this.events.emit('error', {
+        groupId,
+        error: 'All workers are busy. Please try again in a moment.',
+      });
+      this.setState('idle');
+      this.events.emit('typing', { groupId, typing: false });
+      return;
+    }
+
+    this.activeHandles.set(groupId, handle);
+    this.workerPool.postMessage(handle, {
       type: 'compact',
       payload: {
         groupId,
@@ -389,7 +425,7 @@ export class Orchestrator {
   shutdown(): void {
     this.scheduler.stop();
     this.telegram.stop();
-    this.agentWorker.terminate();
+    this.workerPool.shutdown();
   }
 
   // -----------------------------------------------------------------------
@@ -441,7 +477,6 @@ export class Orchestrator {
   }
 
   private async processQueue(): Promise<void> {
-    if (this.processing) return;
     if (this.messageQueue.length === 0) return;
     if (!this.isConfigured()) {
       const msg = this.messageQueue.shift()!;
@@ -452,23 +487,32 @@ export class Orchestrator {
       return;
     }
 
-    this.processing = true;
-    const msg = this.messageQueue.shift()!;
+    // Process all queued messages that can run concurrently
+    // (one per group, skip groups already active)
+    const remaining: InboundMessage[] = [];
+    const toProcess: InboundMessage[] = [];
 
-    try {
-      await this.invokeAgent(msg.groupId, msg.content);
-    } catch (err) {
-      console.error('Failed to invoke agent:', err);
-    } finally {
-      this.processing = false;
-      // Process next in queue
-      if (this.messageQueue.length > 0) {
-        this.processQueue();
+    for (const msg of this.messageQueue) {
+      if (this.activeGroups.has(msg.groupId)) {
+        // This group is already processing — keep in queue
+        remaining.push(msg);
+      } else {
+        toProcess.push(msg);
       }
+    }
+    this.messageQueue = remaining;
+
+    // Invoke agent for each group concurrently
+    for (const msg of toProcess) {
+      this.invokeAgent(msg.groupId, msg.content).catch((err) => {
+        console.error('Failed to invoke agent:', err);
+      });
     }
   }
 
   private async invokeAgent(groupId: string, triggerContent: string): Promise<void> {
+    // Mark this group as active
+    this.activeGroups.add(groupId);
     this.setState('thinking');
     this.router.setTyping(groupId, true);
     this.events.emit('typing', { groupId, typing: true });
@@ -504,8 +548,34 @@ export class Orchestrator {
 
     const systemPrompt = buildSystemPrompt(this.assistantName, memory);
 
+    // Acquire a worker from the pool
+    const handle = this.workerPool.acquire(groupId);
+    if (!handle) {
+      // Pool is full — re-queue the message for later
+      this.activeGroups.delete(groupId);
+      this.messageQueue.push({
+        id: ulid(),
+        groupId,
+        sender: 'User',
+        content: triggerContent,
+        timestamp: Date.now(),
+        channel: groupId.startsWith('tg:') ? 'telegram' : 'browser',
+      });
+      this.events.emit('error', {
+        groupId,
+        error: 'All workers are busy. Your message has been queued and will be processed shortly.',
+      });
+      // Update state if no other groups are active
+      if (this.activeGroups.size === 0) {
+        this.setState('idle');
+      }
+      return;
+    }
+
+    this.activeHandles.set(groupId, handle);
+
     // Send to agent worker with provider config
-    this.agentWorker.postMessage({
+    this.workerPool.postMessage(handle, {
       type: 'invoke',
       payload: {
         groupId,
@@ -520,6 +590,7 @@ export class Orchestrator {
     switch (msg.type) {
       case 'response': {
         const { groupId, text } = msg.payload;
+        this.releaseWorker(groupId);
         await this.deliverResponse(groupId, text);
         break;
       }
@@ -536,6 +607,7 @@ export class Orchestrator {
 
       case 'error': {
         const { groupId, error } = msg.payload;
+        this.releaseWorker(groupId);
         await this.deliverResponse(groupId, `Warning: Error: ${error}`);
         break;
       }
@@ -558,6 +630,7 @@ export class Orchestrator {
       }
 
       case 'compact-done': {
+        this.releaseWorker(msg.payload.groupId);
         await this.handleCompactDone(msg.payload.groupId, msg.payload.summary);
         break;
       }
@@ -571,6 +644,21 @@ export class Orchestrator {
         this.events.emit('webllm-progress', msg.payload);
         break;
       }
+    }
+  }
+
+  /** Release worker back to pool and mark group as no longer active */
+  private releaseWorker(groupId: string): void {
+    const handle = this.activeHandles.get(groupId);
+    if (handle) {
+      this.workerPool.release(handle);
+      this.activeHandles.delete(groupId);
+    }
+    this.activeGroups.delete(groupId);
+
+    // Re-process queued messages now that a worker is free
+    if (this.messageQueue.length > 0) {
+      this.processQueue();
     }
   }
 
@@ -593,7 +681,9 @@ export class Orchestrator {
 
     this.events.emit('context-compacted', { groupId, summary });
     this.events.emit('typing', { groupId, typing: false });
-    this.setState('idle');
+    if (this.activeGroups.size === 0) {
+      this.setState('idle');
+    }
   }
 
   private async deliverResponse(groupId: string, text: string): Promise<void> {
@@ -625,7 +715,10 @@ export class Orchestrator {
     this.events.emit('message', stored);
     this.events.emit('typing', { groupId, typing: false });
 
-    this.setState('idle');
+    // Only go idle if no other groups are active
+    if (this.activeGroups.size === 0) {
+      this.setState('idle');
+    }
     this.router.setTyping(groupId, false);
   }
 }
