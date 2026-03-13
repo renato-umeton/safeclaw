@@ -28,7 +28,10 @@ import {
   DEFAULT_MAX_TOKENS,
   DEFAULT_MODEL,
   DEFAULT_PROVIDER,
+  DEFAULT_PROVIDER_MODELS,
   buildTriggerPattern,
+  isValidModelForProvider,
+  providerModelKey,
 } from './config.js';
 import {
   openDatabase,
@@ -161,6 +164,15 @@ export class Orchestrator {
     );
     this.localPreference = ((await getConfig(CONFIG_KEYS.LOCAL_PREFERENCE)) || 'offline-only') as LocalPreference;
 
+    // Validate that the stored model belongs to the stored provider.
+    // This prevents mismatches (e.g. 'gemini-nano' with provider 'webllm')
+    // that can occur when switching providers doesn't correctly update the model.
+    if (!isValidModelForProvider(this.model, this.providerId)) {
+      const fallback = DEFAULT_PROVIDER_MODELS[this.providerId] || DEFAULT_MODEL;
+      this.model = fallback;
+      await setConfig(CONFIG_KEYS.MODEL, fallback);
+    }
+
     // Set up router
     this.router = new Router(this.browserChat, this.telegram);
 
@@ -249,10 +261,25 @@ export class Orchestrator {
 
   /**
    * Set the active provider.
+   * Also restores the last-used model for this provider (if any).
    */
   async setProviderId(id: ProviderId): Promise<void> {
     this.providerId = id;
     await setConfig(CONFIG_KEYS.PROVIDER, id);
+
+    // Restore last-used model for this provider
+    const savedModel = await getConfig(providerModelKey(id));
+    if (savedModel && isValidModelForProvider(savedModel, id)) {
+      this.model = savedModel;
+      await setConfig(CONFIG_KEYS.MODEL, savedModel);
+    } else {
+      // Fall back to the provider's default model
+      const defaultModel = DEFAULT_PROVIDER_MODELS[id];
+      if (defaultModel) {
+        this.model = defaultModel;
+        await setConfig(CONFIG_KEYS.MODEL, defaultModel);
+      }
+    }
   }
 
   /**
@@ -264,10 +291,13 @@ export class Orchestrator {
 
   /**
    * Update the model.
+   * Also persists it under the current provider so it's restored on provider switch.
    */
   async setModel(model: string): Promise<void> {
     this.model = model;
     await setConfig(CONFIG_KEYS.MODEL, model);
+    // Persist per-provider so we can restore when switching back
+    await setConfig(providerModelKey(this.providerId), model);
   }
 
   /**

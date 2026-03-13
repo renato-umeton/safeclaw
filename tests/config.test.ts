@@ -24,6 +24,10 @@ import {
   APP_URL,
   WEBSITE_URL,
   APP_VERSION,
+  providerModelKey,
+  PROVIDER_MODELS,
+  DEFAULT_PROVIDER_MODELS,
+  isValidModelForProvider,
 } from '../src/config';
 import pkg from '../package.json' with { type: 'json' };
 
@@ -117,5 +121,53 @@ describe('buildTriggerPattern', () => {
 
   it('TRIGGER_PATTERN matches default name', () => {
     expect(TRIGGER_PATTERN.test('@Andy hello')).toBe(true);
+  });
+});
+
+describe('providerModelKey', () => {
+  it('builds per-provider config key', () => {
+    expect(providerModelKey('webllm')).toBe('model:webllm');
+    expect(providerModelKey('anthropic')).toBe('model:anthropic');
+    expect(providerModelKey('chrome-ai')).toBe('model:chrome-ai');
+  });
+});
+
+describe('PROVIDER_MODELS', () => {
+  it('has models for all known providers', () => {
+    expect(PROVIDER_MODELS['anthropic'].length).toBeGreaterThan(0);
+    expect(PROVIDER_MODELS['gemini'].length).toBeGreaterThan(0);
+    expect(PROVIDER_MODELS['webllm'].length).toBeGreaterThan(0);
+    expect(PROVIDER_MODELS['chrome-ai'].length).toBeGreaterThan(0);
+  });
+});
+
+describe('DEFAULT_PROVIDER_MODELS', () => {
+  it('has a default model for each known provider', () => {
+    expect(DEFAULT_PROVIDER_MODELS['anthropic']).toBe('claude-sonnet-4-6');
+    expect(DEFAULT_PROVIDER_MODELS['gemini']).toBe('gemini-2.5-pro-preview-06-05');
+    expect(DEFAULT_PROVIDER_MODELS['webllm']).toBe('qwen3-0.6b');
+    expect(DEFAULT_PROVIDER_MODELS['chrome-ai']).toBe('gemini-nano');
+  });
+});
+
+describe('isValidModelForProvider', () => {
+  it('returns true for valid model-provider pairs', () => {
+    expect(isValidModelForProvider('claude-sonnet-4-6', 'anthropic')).toBe(true);
+    expect(isValidModelForProvider('qwen3-4b', 'webllm')).toBe(true);
+    expect(isValidModelForProvider('gemini-nano', 'chrome-ai')).toBe(true);
+  });
+
+  it('returns false for invalid model-provider pairs', () => {
+    expect(isValidModelForProvider('qwen3-4b', 'anthropic')).toBe(false);
+    expect(isValidModelForProvider('gemini-nano', 'webllm')).toBe(false);
+    expect(isValidModelForProvider('claude-sonnet-4-6', 'chrome-ai')).toBe(false);
+  });
+
+  it('returns false for unknown provider', () => {
+    expect(isValidModelForProvider('any-model', 'unknown-provider')).toBe(false);
+  });
+
+  it('returns false for unknown model', () => {
+    expect(isValidModelForProvider('nonexistent-model', 'anthropic')).toBe(false);
   });
 });

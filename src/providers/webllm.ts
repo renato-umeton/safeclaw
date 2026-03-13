@@ -133,6 +133,17 @@ export class WebLLMProvider implements LLMProvider {
 
     this.loading = true;
     try {
+      // Dispose old engine before loading a new model to free WebGPU resources
+      if (this.engine) {
+        try {
+          await this.engine.unload();
+        } catch {
+          // Best-effort cleanup — old engine may already be invalidated
+        }
+        this.engine = null;
+        this.currentModelId = null;
+      }
+
       // Dynamic import to avoid bundling when not needed
       const webllm = await import('@mlc-ai/web-llm');
 

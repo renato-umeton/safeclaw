@@ -189,13 +189,9 @@ export function SettingsPage() {
   async function handleProviderChange(id: ProviderId) {
     setProviderId(id);
     await orch.setProviderId(id);
-    // Set default model for new provider
-    const prov = PROVIDERS.find((p) => p.id === id);
-    if (prov && prov.models.length > 0) {
-      const newModel = prov.models[0].value;
-      setModel(newModel);
-      await orch.setModel(newModel);
-    }
+    // Orchestrator restores the last-used model for this provider.
+    // Sync UI state with whatever the orchestrator chose.
+    setModel(orch.getModel());
   }
 
   async function handleSaveAnthropicKey() {

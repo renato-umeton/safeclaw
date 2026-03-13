@@ -95,6 +95,35 @@ describe('Orchestrator', () => {
       await orchestrator.setModel('claude-sonnet-4-6');
     });
 
+    it('persists model per provider and restores on provider switch', async () => {
+      // Set a non-default model for webllm
+      await orchestrator.setProviderId('webllm');
+      await orchestrator.setModel('qwen3-4b');
+      expect(orchestrator.getModel()).toBe('qwen3-4b');
+
+      // Switch to chrome-ai — model should change to gemini-nano
+      await orchestrator.setProviderId('chrome-ai');
+      expect(orchestrator.getModel()).toBe('gemini-nano');
+
+      // Switch back to webllm — should restore qwen3-4b (not default qwen3-0.6b)
+      await orchestrator.setProviderId('webllm');
+      expect(orchestrator.getModel()).toBe('qwen3-4b');
+
+      // Clean up
+      await orchestrator.setProviderId('anthropic');
+      await orchestrator.setModel('claude-sonnet-4-6');
+    });
+
+    it('falls back to default model when no saved model for provider', async () => {
+      // Switch to gemini for the first time (no saved model)
+      await orchestrator.setProviderId('gemini');
+      expect(orchestrator.getModel()).toBe('gemini-2.5-pro-preview-06-05');
+
+      // Clean up
+      await orchestrator.setProviderId('anthropic');
+      await orchestrator.setModel('claude-sonnet-4-6');
+    });
+
     it('sets local preference', async () => {
       await orchestrator.setLocalPreference('always');
       expect(orchestrator.getLocalPreference()).toBe('always');

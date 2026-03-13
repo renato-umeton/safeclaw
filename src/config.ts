@@ -93,3 +93,37 @@ export const CONFIG_KEYS = {
   ASSISTANT_NAME: 'assistant_name',
   USER_PROFILE: 'user_profile',
 } as const;
+
+/**
+ * Build a per-provider config key for storing the last-used model.
+ * E.g., providerModelKey('webllm') → 'model:webllm'
+ */
+export function providerModelKey(providerId: string): string {
+  return `model:${providerId}`;
+}
+
+/** Known models for each provider — used for validation on load. */
+export const PROVIDER_MODELS: Record<string, string[]> = {
+  anthropic: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+  gemini: ['gemini-2.5-pro-preview-06-05', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'],
+  webllm: ['qwen3-0.6b', 'qwen3-1.7b', 'qwen3-4b', 'qwen3-30b'],
+  'chrome-ai': ['gemini-nano'],
+};
+
+/** Default model for each provider (first in the list). */
+export const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
+  anthropic: 'claude-sonnet-4-6',
+  gemini: 'gemini-2.5-pro-preview-06-05',
+  webllm: 'qwen3-0.6b',
+  'chrome-ai': 'gemini-nano',
+};
+
+/**
+ * Check if a model ID is valid for a given provider.
+ * Returns false if the provider is unknown or the model doesn't belong to it.
+ */
+export function isValidModelForProvider(model: string, providerId: string): boolean {
+  const models = PROVIDER_MODELS[providerId];
+  if (!models) return false;
+  return models.includes(model);
+}

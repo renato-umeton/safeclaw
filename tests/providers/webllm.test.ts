@@ -330,6 +330,81 @@ describe('WebLLMProvider', () => {
       expect(response.content).toBeDefined();
     });
 
+    it('disposes old engine when switching to a different model', async () => {
+      const webllm = await import('@mlc-ai/web-llm');
+      const mockUnload = vi.fn().mockResolvedValue(undefined);
+
+      // First load creates an engine with unload
+      (webllm.CreateMLCEngine as any).mockResolvedValueOnce({
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue({
+              choices: [{ message: { content: 'model A' } }],
+              usage: { prompt_tokens: 5, completion_tokens: 3 },
+            }),
+          },
+        },
+        unload: mockUnload,
+      });
+
+      const freshProvider = new WebLLMProvider();
+
+      // Load first model
+      await freshProvider.chat({
+        model: 'qwen3-0.6b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+
+      // Switch to a different model — should call unload on old engine
+      await freshProvider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+
+      expect(mockUnload).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles unload failure gracefully when switching models', async () => {
+      const webllm = await import('@mlc-ai/web-llm');
+
+      // First engine has a failing unload
+      (webllm.CreateMLCEngine as any).mockResolvedValueOnce({
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue({
+              choices: [{ message: { content: 'model A' } }],
+              usage: { prompt_tokens: 5, completion_tokens: 3 },
+            }),
+          },
+        },
+        unload: vi.fn().mockRejectedValue(new Error('unload failed')),
+      });
+
+      const freshProvider = new WebLLMProvider();
+
+      // Load first model
+      await freshProvider.chat({
+        model: 'qwen3-0.6b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+
+      // Should not throw even though unload fails
+      const response = await freshProvider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+
+      expect(response.content).toBeDefined();
+    });
+
     it('handles progress report with missing fields (lines 141-142)', async () => {
       const onProgress = vi.fn();
       const progressProvider = new WebLLMProvider(onProgress);

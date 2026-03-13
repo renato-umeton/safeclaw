@@ -14,6 +14,15 @@ let mockProviderId = 'anthropic';
 let mockModel = 'claude-sonnet-4-6';
 let mockWebllmProgress: any = null;
 
+// Simulate per-provider model storage (mirrors orchestrator behavior)
+const savedProviderModels: Record<string, string> = {};
+const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
+  anthropic: 'claude-sonnet-4-6',
+  gemini: 'gemini-2.5-pro-preview-06-05',
+  webllm: 'qwen3-0.6b',
+  'chrome-ai': 'gemini-nano',
+};
+
 vi.mock('../../../src/stores/orchestrator-store', () => ({
   useOrchestratorStore: vi.fn((selector) => {
     const state = {
@@ -32,10 +41,14 @@ vi.mock('../../../src/stores/orchestrator-store', () => ({
     setApiKey: mockSetApiKey,
     setProviderId: (...args: any[]) => {
       mockProviderId = args[0];
+      // Simulate orchestrator restoring per-provider model
+      mockModel = savedProviderModels[args[0]] || DEFAULT_PROVIDER_MODELS[args[0]] || mockModel;
       return mockSetProviderId(...args);
     },
     setModel: (...args: any[]) => {
       mockModel = args[0];
+      // Simulate per-provider persistence
+      savedProviderModels[mockProviderId] = args[0];
       return mockSetModel(...args);
     },
     setLocalPreference: mockSetLocalPreference,
@@ -97,6 +110,10 @@ describe('SettingsPage', () => {
     mockModel = 'claude-sonnet-4-6';
     mockWebllmProgress = null;
     mockGetModelCacheEstimate.mockResolvedValue(0);
+    // Clear per-provider model storage
+    for (const key of Object.keys(savedProviderModels)) {
+      delete savedProviderModels[key];
+    }
   });
 
   afterEach(() => {
@@ -165,7 +182,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Chrome AI (Gemini Nano) (Local)')).toBeInTheDocument();
   });
 
-  it('changes provider and sets default model', async () => {
+  it('changes provider and syncs model from orchestrator', async () => {
     render(<SettingsPage />);
     const providerSelect = screen.getByDisplayValue('Anthropic Claude');
 
@@ -174,7 +191,40 @@ describe('SettingsPage', () => {
     });
 
     expect(mockSetProviderId).toHaveBeenCalledWith('gemini');
-    expect(mockSetModel).toHaveBeenCalledWith('gemini-2.5-pro-preview-06-05');
+    // Model is now restored by the orchestrator (via setProviderId), not set directly
+    // The UI syncs via orch.getModel() instead of calling setModel
+    expect(mockModel).toBe('gemini-2.5-pro-preview-06-05');
+  });
+
+  it('restores per-provider model when switching back to a provider', async () => {
+    render(<SettingsPage />);
+
+    // Select webllm provider
+    const providerSelect = screen.getByDisplayValue('Anthropic Claude');
+    await act(async () => {
+      fireEvent.change(providerSelect, { target: { value: 'webllm' } });
+    });
+
+    // Change model within webllm to qwen3-4b
+    const modelSelect = screen.getByDisplayValue('Qwen3 0.6B (400 MB)');
+    await act(async () => {
+      fireEvent.change(modelSelect, { target: { value: 'qwen3-4b' } });
+    });
+    expect(mockSetModel).toHaveBeenCalledWith('qwen3-4b');
+
+    // Switch to chrome-ai
+    const providerSelect2 = screen.getByDisplayValue('WebLLM (Local) (Local)');
+    await act(async () => {
+      fireEvent.change(providerSelect2, { target: { value: 'chrome-ai' } });
+    });
+    expect(mockModel).toBe('gemini-nano');
+
+    // Switch back to webllm — should restore qwen3-4b
+    const providerSelect3 = screen.getByDisplayValue('Chrome AI (Gemini Nano) (Local)');
+    await act(async () => {
+      fireEvent.change(providerSelect3, { target: { value: 'webllm' } });
+    });
+    expect(mockModel).toBe('qwen3-4b');
   });
 
   // ---- Model selection ----
