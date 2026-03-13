@@ -137,6 +137,17 @@ describe('skill-hub', () => {
       expect(result.nextCursor).toBe('abc123');
     });
 
+    it('always includes sort=downloads and nonSuspicious=true params', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        mockFetchResponse({ items: [], nextCursor: null }),
+      );
+
+      await listSkills();
+      const url = fetchSpy.mock.calls[0][0] as string;
+      expect(url).toContain('sort=downloads');
+      expect(url).toContain('nonSuspicious=true');
+    });
+
     it('passes limit parameter', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
         mockFetchResponse({ items: [], nextCursor: null }),
