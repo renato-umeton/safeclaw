@@ -89,7 +89,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       'Fetch a URL via HTTP and return the response body. ' +
       'Works with any public URL — JSON APIs, HTML pages, etc. ' +
       'HTML content is automatically stripped to plain text. ' +
-      'Response is truncated to 100KB.',
+      'Response is truncated to 20KB.',
     input_schema: {
       type: 'object',
       properties: {

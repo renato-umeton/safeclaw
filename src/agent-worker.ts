@@ -10,7 +10,7 @@
 
 import type { WorkerInbound, WorkerOutbound, InvokePayload, CompactPayload, ConversationMessage, ThinkingLogEntry, WorkerProviderConfig } from './types.js';
 import { TOOL_DEFINITIONS } from './tools.js';
-import { FETCH_MAX_RESPONSE, CORS_PROXIES } from './config.js';
+import { FETCH_MAX_RESPONSE, CORS_PROXIES, FETCH_TIMEOUT } from './config.js';
 import { readGroupFile, writeGroupFile, listGroupFiles } from './storage.js';
 import { executeShell } from './shell.js';
 import { ulid } from './ulid.js';
@@ -414,7 +414,7 @@ export async function fetchWithCorsProxy(
 ): Promise<Response> {
   // Attempt direct fetch first
   try {
-    const res = await fetch(url, init);
+    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT) });
     return res;
   } catch (directError) {
     // Only fall back for GET-like requests (proxies only support URL passthrough)
@@ -428,7 +428,7 @@ export async function fetchWithCorsProxy(
     for (const proxy of CORS_PROXIES) {
       try {
         const proxiedUrl = proxy + encodeURIComponent(url);
-        const res = await fetch(proxiedUrl);
+        const res = await fetch(proxiedUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT) });
         return res;
       } catch (proxyError) {
         lastError = proxyError;

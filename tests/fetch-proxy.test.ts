@@ -37,7 +37,8 @@ describe('fetchWithCorsProxy', () => {
 
     expect(res).toBe(mockResponse);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(fetchSpy).toHaveBeenCalledWith('https://api.example.com/data', undefined);
+    expect(fetchSpy.mock.calls[0][0]).toBe('https://api.example.com/data');
+    expect(fetchSpy.mock.calls[0][1]).toHaveProperty('signal');
   });
 
   it('falls back to CORS proxy when direct fetch throws', async () => {
@@ -111,7 +112,9 @@ describe('fetchWithCorsProxy', () => {
     };
     await fetchWithCorsProxy('https://api.example.com/', init);
 
-    expect(fetchSpy).toHaveBeenCalledWith('https://api.example.com/', init);
+    expect(fetchSpy.mock.calls[0][0]).toBe('https://api.example.com/');
+    expect(fetchSpy.mock.calls[0][1]).toMatchObject({ method: 'GET', headers: { Accept: 'application/json' } });
+    expect(fetchSpy.mock.calls[0][1]).toHaveProperty('signal');
   });
 
   it('encodes the URL when proxying', async () => {

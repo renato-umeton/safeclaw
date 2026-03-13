@@ -59,6 +59,9 @@ export const CORS_PROXIES: readonly string[] = [
   'https://corsproxy.io/?url=',
 ];
 
+/** Timeout (ms) for each individual fetch attempt (direct + each proxy) */
+export const FETCH_TIMEOUT = 15_000;
+
 /** IndexedDB database name */
 export const DB_NAME = 'safeclaw';
 
