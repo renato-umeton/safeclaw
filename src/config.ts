@@ -49,6 +49,16 @@ export const PROCESS_LOOP_INTERVAL = 100;
 /** Fetch tool response truncation limit */
 export const FETCH_MAX_RESPONSE = 20_000;
 
+/**
+ * Public CORS proxy services used as fallback when direct browser fetch
+ * fails due to CORS restrictions.  Tried in order; first success wins.
+ * Each entry is a template: the target URL is appended at the placeholder.
+ */
+export const CORS_PROXIES: readonly string[] = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?url=',
+];
+
 /** IndexedDB database name */
 export const DB_NAME = 'safeclaw';
 

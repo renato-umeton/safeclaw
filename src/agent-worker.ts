@@ -10,7 +10,7 @@
 
 import type { WorkerInbound, WorkerOutbound, InvokePayload, CompactPayload, ConversationMessage, ThinkingLogEntry, WorkerProviderConfig } from './types.js';
 import { TOOL_DEFINITIONS } from './tools.js';
-import { FETCH_MAX_RESPONSE } from './config.js';
+import { FETCH_MAX_RESPONSE, CORS_PROXIES } from './config.js';
 import { readGroupFile, writeGroupFile, listGroupFiles } from './storage.js';
 import { executeShell } from './shell.js';
 import { ulid } from './ulid.js';
@@ -324,11 +324,12 @@ async function executeTool(
       }
 
       case 'fetch_url': {
-        const fetchRes = await fetch(input.url as string, {
-          method: (input.method as string) || 'GET',
-          headers: input.headers as Record<string, string> | undefined,
-          body: input.body as string | undefined,
-        });
+        const url = input.url as string;
+        const method = (input.method as string) || 'GET';
+        const headers = input.headers as Record<string, string> | undefined;
+        const reqBody = input.body as string | undefined;
+
+        const fetchRes = await fetchWithCorsProxy(url, { method, headers, body: reqBody });
         const rawText = await fetchRes.text();
         const contentType = fetchRes.headers.get('content-type') || '';
         const status = `[HTTP ${fetchRes.status}]\n`;
@@ -393,6 +394,48 @@ async function executeTool(
 
 function post(message: WorkerOutbound): void {
   (self as unknown as Worker).postMessage(message);
+}
+
+/**
+ * Fetch a URL, falling back through CORS proxy services when a direct
+ * browser fetch fails (e.g. due to CORS restrictions on HTML websites).
+ *
+ * Strategy:
+ *   1. Try direct `fetch(url)` — works for CORS-friendly APIs.
+ *   2. If that throws a network/CORS error, try each proxy in CORS_PROXIES.
+ *   3. Return the first successful Response, or throw the last error.
+ *
+ * Only GET requests are proxied; non-GET requests with a body cannot be
+ * relayed through simple URL-prefix proxies, so they skip the fallback.
+ */
+export async function fetchWithCorsProxy(
+  url: string,
+  init?: RequestInit,
+): Promise<Response> {
+  // Attempt direct fetch first
+  try {
+    const res = await fetch(url, init);
+    return res;
+  } catch (directError) {
+    // Only fall back for GET-like requests (proxies only support URL passthrough)
+    const method = (init?.method || 'GET').toUpperCase();
+    if (method !== 'GET' || CORS_PROXIES.length === 0) {
+      throw directError;
+    }
+
+    // Try each CORS proxy in order
+    let lastError: unknown = directError;
+    for (const proxy of CORS_PROXIES) {
+      try {
+        const proxiedUrl = proxy + encodeURIComponent(url);
+        const res = await fetch(proxiedUrl);
+        return res;
+      } catch (proxyError) {
+        lastError = proxyError;
+      }
+    }
+    throw lastError;
+  }
 }
 
 /**
