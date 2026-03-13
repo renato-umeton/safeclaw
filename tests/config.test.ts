@@ -24,6 +24,8 @@ import {
   APP_URL,
   WEBSITE_URL,
   APP_VERSION,
+  CORS_PROXIES,
+  FETCH_TIMEOUT,
 } from '../src/config';
 import pkg from '../package.json' with { type: 'json' };
 
@@ -68,6 +70,9 @@ describe('config constants', () => {
     expect(SCHEDULER_INTERVAL).toBe(60_000);
     expect(PROCESS_LOOP_INTERVAL).toBe(100);
     expect(FETCH_MAX_RESPONSE).toBe(20_000);
+    expect(Array.isArray(CORS_PROXIES)).toBe(true);
+    expect(CORS_PROXIES.length).toBeGreaterThan(0);
+    expect(FETCH_TIMEOUT).toBe(15_000);
   });
 
   it('has all required config keys', () => {
