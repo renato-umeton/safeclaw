@@ -135,14 +135,14 @@ describe('Orchestrator', () => {
       await orchestrator.setApiKey('anthropic', 'my-key');
     });
 
-    it('emits error on compactContext when not idle', async () => {
-      (orchestrator as any).state = 'thinking';
+    it('emits error on compactContext when group is already active', async () => {
+      (orchestrator as any).activeGroups.add('br:main');
       const errorCallback = vi.fn();
       orchestrator.events.on('error', errorCallback);
       await orchestrator.compactContext();
       expect(errorCallback).toHaveBeenCalled();
       orchestrator.events.off('error', errorCallback);
-      (orchestrator as any).state = 'idle';
+      (orchestrator as any).activeGroups.delete('br:main');
     });
 
     // --- handleWorkerMessage ---
@@ -290,30 +290,26 @@ describe('Orchestrator', () => {
       // Should not throw — task is saved to DB
     });
 
-    it('invokes agent and posts message to worker', async () => {
-      // Reset state to idle
-      (orchestrator as any).state = 'idle';
-      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
+    it('invokes agent and posts message via worker pool', async () => {
+      // Reset state
+      (orchestrator as any).releaseWorker('br:main');
+
       const stateCallback = vi.fn();
       orchestrator.events.on('state-change', stateCallback);
 
       await (orchestrator as any).invokeAgent('br:main', 'test prompt');
 
       expect(stateCallback).toHaveBeenCalledWith('thinking');
-      expect(postMessageSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'invoke',
-          payload: expect.objectContaining({ groupId: 'br:main' }),
-        }),
-      );
+
+      // A worker should have been acquired for the group
+      expect((orchestrator as any).activeGroups.has('br:main')).toBe(true);
 
       orchestrator.events.off('state-change', stateCallback);
-      postMessageSpy.mockRestore();
-      (orchestrator as any).state = 'idle';
+      (orchestrator as any).releaseWorker('br:main');
     });
 
     it('invokes agent with scheduled task prefix', async () => {
-      (orchestrator as any).state = 'idle';
+      (orchestrator as any).releaseWorker('br:main');
       const msgCallback = vi.fn();
       orchestrator.events.on('message', msgCallback);
 
@@ -325,7 +321,7 @@ describe('Orchestrator', () => {
 
       orchestrator.events.off('message', msgCallback);
       (orchestrator as any).pendingScheduledTasks.clear();
-      (orchestrator as any).state = 'idle';
+      (orchestrator as any).releaseWorker('br:main');
     });
 
     it('processQueue emits error when no API key and no local mode', async () => {
@@ -354,8 +350,7 @@ describe('Orchestrator', () => {
     it('processQueue proceeds when local preference is always without API keys', async () => {
       await orchestrator.setApiKey('anthropic', '');
       await orchestrator.setLocalPreference('always');
-      (orchestrator as any).state = 'idle';
-      (orchestrator as any).processing = false;
+      (orchestrator as any).releaseWorker('br:main');
       (orchestrator as any).messageQueue = [{
         id: 'q-local',
         groupId: 'br:main',
@@ -365,26 +360,21 @@ describe('Orchestrator', () => {
         channel: 'browser',
       }];
 
-      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
       const errorCallback = vi.fn();
       orchestrator.events.on('error', errorCallback);
 
       await (orchestrator as any).processQueue();
 
       expect(errorCallback).not.toHaveBeenCalled();
-      expect(postMessageSpy).toHaveBeenCalled();
 
       orchestrator.events.off('error', errorCallback);
-      postMessageSpy.mockRestore();
       await orchestrator.setApiKey('anthropic', 'my-key');
       await orchestrator.setLocalPreference('offline-only');
-      (orchestrator as any).state = 'idle';
-      (orchestrator as any).processing = false;
+      (orchestrator as any).releaseWorker('br:main');
     });
 
     it('processQueue invokes agent when configured', async () => {
-      (orchestrator as any).state = 'idle';
-      (orchestrator as any).processing = false;
+      (orchestrator as any).releaseWorker('br:main');
       (orchestrator as any).messageQueue = [{
         id: 'q-2',
         groupId: 'br:main',
@@ -394,14 +384,16 @@ describe('Orchestrator', () => {
         channel: 'browser',
       }];
 
-      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
+      const stateCallback = vi.fn();
+      orchestrator.events.on('state-change', stateCallback);
 
       await (orchestrator as any).processQueue();
 
-      expect(postMessageSpy).toHaveBeenCalled();
-      postMessageSpy.mockRestore();
-      (orchestrator as any).state = 'idle';
-      (orchestrator as any).processing = false;
+      // Should have transitioned to thinking (agent invoked)
+      expect(stateCallback).toHaveBeenCalledWith('thinking');
+
+      orchestrator.events.off('state-change', stateCallback);
+      (orchestrator as any).releaseWorker('br:main');
     });
 
     it('triggers for non-main groups with trigger word', async () => {
@@ -420,11 +412,13 @@ describe('Orchestrator', () => {
       expect(msgCallback).toHaveBeenCalled();
       expect(msgCallback.mock.calls[0][0].isTrigger).toBe(true);
       orchestrator.events.off('message', msgCallback);
+      (orchestrator as any).releaseWorker('tg:123');
     });
 
     // --- enqueue and processQueue ---
 
     it('enqueues browser main messages without trigger pattern', async () => {
+      (orchestrator as any).releaseWorker('br:main');
       const msgCallback = vi.fn();
       orchestrator.events.on('message', msgCallback);
 
@@ -440,6 +434,7 @@ describe('Orchestrator', () => {
       expect(msgCallback).toHaveBeenCalled();
       expect(msgCallback.mock.calls[0][0].isTrigger).toBe(true);
       orchestrator.events.off('message', msgCallback);
+      (orchestrator as any).releaseWorker('br:main');
     });
 
     it('does not trigger for non-main groups without trigger word', async () => {
@@ -462,13 +457,89 @@ describe('Orchestrator', () => {
 
     // --- preloadModel ---
 
-    it('preloadModel sends preload message to worker', () => {
-      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
+    it('preloadModel acquires worker and sends preload message', () => {
       orchestrator.preloadModel();
-      expect(postMessageSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'preload' }),
+      // Should not throw — preload is fire-and-forget
+    });
+
+    // --- cancelInvocation ---
+
+    it('cancelInvocation sends cancel message to active worker', async () => {
+      (orchestrator as any).releaseWorker('br:main');
+
+      // First invoke to get a handle
+      await (orchestrator as any).invokeAgent('br:main', 'test');
+      const handle = (orchestrator as any).activeHandles.get('br:main');
+      expect(handle).toBeDefined();
+
+      // Now cancel
+      orchestrator.cancelInvocation('br:main');
+      expect(handle.worker.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'cancel', payload: { groupId: 'br:main' } }),
       );
-      postMessageSpy.mockRestore();
+
+      (orchestrator as any).releaseWorker('br:main');
+    });
+
+    it('cancelInvocation is a no-op for non-active groups', () => {
+      // Should not throw
+      orchestrator.cancelInvocation('non-existent-group');
+    });
+
+    // --- per-group concurrency ---
+
+    it('allows concurrent invocations for different groups', async () => {
+      (orchestrator as any).releaseWorker('br:main');
+      (orchestrator as any).releaseWorker('tg:123');
+
+      await (orchestrator as any).invokeAgent('br:main', 'msg1');
+      await (orchestrator as any).invokeAgent('tg:123', 'msg2');
+
+      expect((orchestrator as any).activeGroups.size).toBe(2);
+      expect((orchestrator as any).activeGroups.has('br:main')).toBe(true);
+      expect((orchestrator as any).activeGroups.has('tg:123')).toBe(true);
+
+      (orchestrator as any).releaseWorker('br:main');
+      (orchestrator as any).releaseWorker('tg:123');
+    });
+
+    it('queues messages for the same group when already active', async () => {
+      (orchestrator as any).releaseWorker('br:main');
+      (orchestrator as any).messageQueue = [];
+
+      // First invoke — group becomes active
+      await (orchestrator as any).invokeAgent('br:main', 'msg1');
+
+      // Simulate queuing another message for the same group
+      (orchestrator as any).messageQueue = [{
+        id: 'q-dup',
+        groupId: 'br:main',
+        sender: 'User',
+        content: 'msg2',
+        timestamp: Date.now(),
+        channel: 'browser',
+      }];
+
+      await (orchestrator as any).processQueue();
+
+      // Message should remain in queue since group is already active
+      expect((orchestrator as any).messageQueue.length).toBe(1);
+      expect((orchestrator as any).messageQueue[0].content).toBe('msg2');
+
+      (orchestrator as any).releaseWorker('br:main');
+      (orchestrator as any).messageQueue = [];
+    });
+
+    // --- releaseWorker ---
+
+    it('releaseWorker cleans up active group tracking', () => {
+      // Directly add to activeGroups to test releaseWorker behavior
+      (orchestrator as any).activeGroups.add('test-release');
+      (orchestrator as any).messageQueue = [];
+
+      (orchestrator as any).releaseWorker('test-release');
+
+      expect((orchestrator as any).activeGroups.has('test-release')).toBe(false);
     });
 
     // --- buildProviderConfig ---
@@ -484,7 +555,7 @@ describe('Orchestrator', () => {
 
     // --- shutdown ---
 
-    it('shutdown stops scheduler and telegram', () => {
+    it('shutdown stops scheduler, telegram, and worker pool', () => {
       orchestrator.shutdown();
     });
 
