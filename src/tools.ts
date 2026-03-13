@@ -87,7 +87,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     name: 'fetch_url',
     description:
       'Fetch a URL via HTTP and return the response body. ' +
-      'Subject to browser CORS restrictions — works with most public APIs. ' +
+      'Subject to browser CORS restrictions — works with most public JSON APIs but NOT with HTML websites (e.g. news.ycombinator.com will fail). ' +
+      'Always prefer CORS-friendly JSON API endpoints over scraping HTML pages. ' +
+      'For Hacker News use https://hacker-news.firebaseio.com/v0/ (e.g. topstories.json, item/<id>.json). ' +
       'Response is truncated to 100KB.',
     input_schema: {
       type: 'object',

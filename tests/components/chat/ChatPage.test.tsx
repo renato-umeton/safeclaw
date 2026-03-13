@@ -63,7 +63,7 @@ describe('ChatPage', () => {
     render(<ChatPage />);
     fireEvent.click(screen.getByText('Latest news').closest('button')!);
     expect(mockSendMessage).toHaveBeenCalledWith(
-      'Get me the top trending posts from HackerNews.',
+      'Get me the top trending posts from HackerNews. Use the Hacker News API at https://hacker-news.firebaseio.com/v0/topstories.json to get story IDs, then fetch individual items via https://hacker-news.firebaseio.com/v0/item/<id>.json.',
     );
   });
 
