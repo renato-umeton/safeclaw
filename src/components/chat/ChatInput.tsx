@@ -3,14 +3,16 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useRef, type KeyboardEvent } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Square } from 'lucide-react';
 
 interface Props {
   onSend: (text: string) => void;
   disabled: boolean;
+  isGenerating?: boolean;
+  onStop?: () => void;
 }
 
-export function ChatInput({ onSend, disabled }: Props) {
+export function ChatInput({ onSend, disabled, isGenerating = false, onStop }: Props) {
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -44,14 +46,24 @@ export function ChatInput({ onSend, disabled }: Props) {
         disabled={disabled}
         rows={1}
       />
-      <button
-        className="btn btn-primary btn-circle"
-        onClick={handleSend}
-        disabled={disabled || !text.trim()}
-        aria-label="Send message"
-      >
-        <Send className="w-5 h-5" />
-      </button>
+      {isGenerating ? (
+        <button
+          className="btn btn-error btn-circle"
+          onClick={onStop}
+          aria-label="Stop generation"
+        >
+          <Square className="w-4 h-4 fill-current" />
+        </button>
+      ) : (
+        <button
+          className="btn btn-primary btn-circle"
+          onClick={handleSend}
+          disabled={disabled || !text.trim()}
+          aria-label="Send message"
+        >
+          <Send className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 }

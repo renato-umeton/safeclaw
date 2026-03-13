@@ -92,11 +92,21 @@ export class WebLLMProvider implements LLMProvider {
       }
     }
 
+    // Check if cancelled before starting inference
+    if (request.signal?.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
+
     const completion = await this.engine.chat.completions.create({
       messages,
       max_tokens: request.maxTokens,
       temperature: 0.7,
     });
+
+    // Check if cancelled after inference completes
+    if (request.signal?.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
 
     const choice = completion.choices[0];
     const rawContent = choice?.message?.content || '';

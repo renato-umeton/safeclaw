@@ -57,6 +57,12 @@ function getOrCreateProvider(config: WorkerProviderConfig): LLMProvider {
 }
 
 // ---------------------------------------------------------------------------
+// Cancellation state — one AbortController per active invocation
+// ---------------------------------------------------------------------------
+
+let activeAbortController: AbortController | null = null;
+
+// ---------------------------------------------------------------------------
 // Message handler
 // ---------------------------------------------------------------------------
 
@@ -74,7 +80,7 @@ self.onmessage = async (event: MessageEvent<WorkerInbound>) => {
       await handlePreload(payload as { providerConfig: WorkerProviderConfig });
       break;
     case 'cancel':
-      // TODO: AbortController-based cancellation
+      handleCancel(payload as { groupId: string });
       break;
   }
 };
@@ -103,6 +109,16 @@ async function handlePreload(payload: { providerConfig: WorkerProviderConfig }):
 // Shell emulator needs no boot — it's pure JS over OPFS
 
 // ---------------------------------------------------------------------------
+// Cancellation handler
+// ---------------------------------------------------------------------------
+
+function handleCancel(_payload: { groupId: string }): void {
+  if (activeAbortController) {
+    activeAbortController.abort();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Agent invocation — tool-use loop
 // ---------------------------------------------------------------------------
 
@@ -111,6 +127,11 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
   const { model, maxTokens } = providerConfig;
 
   const provider = getOrCreateProvider(providerConfig);
+
+  // Set up cancellation for this invocation
+  const abortController = new AbortController();
+  activeAbortController = abortController;
+  const { signal } = abortController;
 
   post({ type: 'typing', payload: { groupId } });
   log(groupId, 'info', 'Starting', `Provider: ${provider.name} · Model: ${model} · Max tokens: ${maxTokens}`);
@@ -121,6 +142,12 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
     const maxIterations = provider.isLocal ? 10 : 25; // Lower limit for local models
 
     while (iterations < maxIterations) {
+      // Check cancellation before each iteration
+      if (signal.aborted) {
+        post({ type: 'response', payload: { groupId, text: '(generation stopped by user)' } });
+        return;
+      }
+
       iterations++;
 
       const request: ChatRequest = {
@@ -129,6 +156,7 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
         system: systemPrompt,
         messages: currentMessages,
         tools: provider.supportsToolUse() ? TOOL_DEFINITIONS : undefined,
+        signal,
       };
 
       log(groupId, 'api-call', `API call #${iterations}`, `${currentMessages.length} messages in context`);
@@ -162,6 +190,11 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
         // Execute all tool calls
         const toolResults = [];
         for (const block of result.content) {
+          // Check cancellation between tool calls
+          if (signal.aborted) {
+            post({ type: 'response', payload: { groupId, text: '(generation stopped by user)' } });
+            return;
+          }
           if (block.type === 'tool_use') {
             const inputPreview = JSON.stringify(block.input);
             const inputShort = inputPreview.length > 300 ? inputPreview.slice(0, 300) + '...' : inputPreview;
@@ -223,9 +256,18 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
       },
     });
   } catch (err: unknown) {
+    // If aborted, send a clean stopped message instead of an error
+    if (signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+      post({ type: 'response', payload: { groupId, text: '(generation stopped by user)' } });
+      return;
+    }
     const message = err instanceof Error ? err.message : String(err);
     const errorCode = (err as any)?.statusCode;
     post({ type: 'error', payload: { groupId, error: message, errorCode } });
+  } finally {
+    if (activeAbortController === abortController) {
+      activeAbortController = null;
+    }
   }
 }
 

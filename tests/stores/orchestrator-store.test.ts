@@ -427,12 +427,33 @@ describe('useOrchestratorStore', () => {
         submitMessage: vi.fn(),
         newSession: vi.fn(),
         compactContext: vi.fn().mockResolvedValue(undefined),
+        cancelGeneration: vi.fn(),
       } as any;
 
       await initOrchestratorStore(mockOrch);
 
       await useOrchestratorStore.getState().compactContext();
       expect(mockOrch.compactContext).toHaveBeenCalledWith('br:main');
+    });
+
+    it('cancelGeneration delegates to orchestrator', async () => {
+      const callbacks: Record<string, Function> = {};
+      const mockOrch = {
+        events: {
+          on: vi.fn((event: string, cb: Function) => { callbacks[event] = cb; }),
+          off: vi.fn(),
+          emit: vi.fn(),
+        },
+        submitMessage: vi.fn(),
+        newSession: vi.fn(),
+        compactContext: vi.fn(),
+        cancelGeneration: vi.fn(),
+      } as any;
+
+      await initOrchestratorStore(mockOrch);
+
+      useOrchestratorStore.getState().cancelGeneration();
+      expect(mockOrch.cancelGeneration).toHaveBeenCalledWith('br:main');
     });
   });
 });

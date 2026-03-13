@@ -4,6 +4,7 @@ import { ChatPage } from '../../../src/components/chat/ChatPage';
 const mockSendMessage = vi.fn();
 const mockClearError = vi.fn();
 const mockLoadHistory = vi.fn();
+const mockCancelGeneration = vi.fn();
 
 // Default state — no messages, idle
 const defaultState = {
@@ -18,6 +19,7 @@ const defaultState = {
   sendMessage: mockSendMessage,
   newSession: vi.fn(),
   compactContext: vi.fn(),
+  cancelGeneration: mockCancelGeneration,
   clearError: mockClearError,
   loadHistory: mockLoadHistory,
   ready: true,
@@ -164,5 +166,30 @@ describe('ChatPage', () => {
     currentState = { ...defaultState, webllmProgress: null };
     render(<ChatPage />);
     expect(screen.queryByText(/Downloading model/)).toBeNull();
+  });
+
+  it('shows stop button when state is thinking', () => {
+    currentState = { ...defaultState, state: 'thinking', isTyping: true };
+    render(<ChatPage />);
+    expect(screen.getByLabelText('Stop generation')).toBeInTheDocument();
+  });
+
+  it('shows stop button when state is responding', () => {
+    currentState = { ...defaultState, state: 'responding', isTyping: true };
+    render(<ChatPage />);
+    expect(screen.getByLabelText('Stop generation')).toBeInTheDocument();
+  });
+
+  it('does not show stop button when idle', () => {
+    currentState = { ...defaultState, state: 'idle' };
+    render(<ChatPage />);
+    expect(screen.queryByLabelText('Stop generation')).toBeNull();
+  });
+
+  it('calls cancelGeneration when stop button is clicked', () => {
+    currentState = { ...defaultState, state: 'thinking', isTyping: true };
+    render(<ChatPage />);
+    fireEvent.click(screen.getByLabelText('Stop generation'));
+    expect(mockCancelGeneration).toHaveBeenCalled();
   });
 });
