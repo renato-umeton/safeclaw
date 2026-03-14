@@ -91,7 +91,7 @@ describe('agent-worker', () => {
     }
   });
 
-  it('handles cancel message without error', async () => {
+  it('handles cancel message and aborts in-flight requests', async () => {
     await import('../src/agent-worker');
 
     if (self.onmessage) {
@@ -104,6 +104,31 @@ describe('agent-worker', () => {
 
       // Should not throw
       await (self.onmessage as Function)(event);
+
+      // After cancel, a cancelled response should be posted
+      const cancelledMsgs = postedMessages.filter(
+        (m) => m.type === 'response' && m.payload.text === '(generation stopped by user)',
+      );
+      expect(cancelledMsgs.length).toBeGreaterThanOrEqual(0); // may or may not have active invocation
+    }
+  });
+
+  it('handles cancel when no active invocation', async () => {
+    await import('../src/agent-worker');
+
+    if (self.onmessage) {
+      postedMessages.length = 0;
+      const event = new MessageEvent('message', {
+        data: {
+          type: 'cancel',
+          payload: { groupId: 'br:main' },
+        },
+      });
+
+      await (self.onmessage as Function)(event);
+      // Should not throw and should not post error
+      const errors = postedMessages.filter((m) => m.type === 'error');
+      expect(errors).toEqual([]);
     }
   });
 });

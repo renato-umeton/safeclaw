@@ -15,7 +15,7 @@ describe('ChatInput', () => {
     const textarea = screen.getByRole('textbox');
     await userEvent.type(textarea, 'Hello!');
 
-    const sendButton = screen.getByRole('button');
+    const sendButton = screen.getByLabelText('Send message');
     await userEvent.click(sendButton);
 
     expect(onSend).toHaveBeenCalledWith('Hello!');
@@ -28,7 +28,7 @@ describe('ChatInput', () => {
     const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
     await userEvent.type(textarea, 'test');
 
-    const sendButton = screen.getByRole('button');
+    const sendButton = screen.getByLabelText('Send message');
     await userEvent.click(sendButton);
 
     expect(textarea.value).toBe('');
@@ -38,7 +38,7 @@ describe('ChatInput', () => {
     const onSend = vi.fn();
     render(<ChatInput onSend={onSend} disabled={false} />);
 
-    const sendButton = screen.getByRole('button');
+    const sendButton = screen.getByLabelText('Send message');
     await userEvent.click(sendButton);
 
     expect(onSend).not.toHaveBeenCalled();
@@ -80,5 +80,39 @@ describe('ChatInput', () => {
 
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
     expect(onSend).toHaveBeenCalled();
+  });
+
+  // --- Stop button tests ---
+
+  it('shows stop button when isGenerating is true', () => {
+    render(<ChatInput onSend={vi.fn()} disabled={true} isGenerating={true} onStop={vi.fn()} />);
+    expect(screen.getByLabelText('Stop generation')).toBeInTheDocument();
+  });
+
+  it('does not show stop button when isGenerating is false', () => {
+    render(<ChatInput onSend={vi.fn()} disabled={false} isGenerating={false} onStop={vi.fn()} />);
+    expect(screen.queryByLabelText('Stop generation')).toBeNull();
+  });
+
+  it('shows send button when not generating', () => {
+    render(<ChatInput onSend={vi.fn()} disabled={false} isGenerating={false} />);
+    expect(screen.getByLabelText('Send message')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Stop generation')).toBeNull();
+  });
+
+  it('calls onStop when stop button is clicked', async () => {
+    const onStop = vi.fn();
+    render(<ChatInput onSend={vi.fn()} disabled={true} isGenerating={true} onStop={onStop} />);
+
+    const stopButton = screen.getByLabelText('Stop generation');
+    await userEvent.click(stopButton);
+
+    expect(onStop).toHaveBeenCalledTimes(1);
+  });
+
+  it('stop button is not disabled even when disabled prop is true', () => {
+    render(<ChatInput onSend={vi.fn()} disabled={true} isGenerating={true} onStop={vi.fn()} />);
+    const stopButton = screen.getByLabelText('Stop generation');
+    expect(stopButton).not.toBeDisabled();
   });
 });

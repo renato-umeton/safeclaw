@@ -384,6 +384,24 @@ export class Orchestrator {
   }
 
   /**
+   * Cancel the current generation for a group.
+   * Sends a cancel message to the worker and resets state to idle.
+   */
+  cancelGeneration(groupId: string = DEFAULT_GROUP_ID): void {
+    if (this.state === 'idle') return;
+
+    this.agentWorker.postMessage({
+      type: 'cancel',
+      payload: { groupId },
+    });
+
+    this.events.emit('typing', { groupId, typing: false });
+    this.setState('idle');
+    this.router.setTyping(groupId, false);
+    this.processing = false;
+  }
+
+  /**
    * Shut down everything.
    */
   shutdown(): void {

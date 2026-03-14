@@ -53,6 +53,7 @@ export class AnthropicProvider implements LLMProvider {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify(body),
+      signal: request.signal,
     });
 
     if (!res.ok) {

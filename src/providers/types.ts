@@ -14,6 +14,7 @@ export interface ChatRequest {
   system: string;
   messages: ConversationMessage[];
   tools?: ToolDefinition[];
+  signal?: AbortSignal;
 }
 
 /** A normalized content block in provider-agnostic format */

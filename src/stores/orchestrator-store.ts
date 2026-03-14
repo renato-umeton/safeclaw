@@ -36,6 +36,7 @@ interface OrchestratorStoreState {
   sendMessage: (text: string) => void;
   newSession: () => Promise<void>;
   compactContext: () => Promise<void>;
+  cancelGeneration: () => void;
   clearError: () => void;
   loadHistory: () => Promise<void>;
 }
@@ -72,6 +73,11 @@ export const useOrchestratorStore = create<OrchestratorStoreState>((set, get) =>
   compactContext: async () => {
     const orch = getOrchestrator();
     await orch.compactContext(get().activeGroupId);
+  },
+
+  cancelGeneration: () => {
+    const orch = getOrchestrator();
+    orch.cancelGeneration(get().activeGroupId);
   },
 
   clearError: () => set({ error: null }),

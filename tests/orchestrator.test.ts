@@ -460,6 +460,44 @@ describe('Orchestrator', () => {
       orchestrator.events.off('message', msgCallback);
     });
 
+    // --- cancelGeneration ---
+
+    it('cancelGeneration sends cancel message to worker and resets state', () => {
+      (orchestrator as any).state = 'thinking';
+      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
+      const stateCallback = vi.fn();
+      const typingCallback = vi.fn();
+      orchestrator.events.on('state-change', stateCallback);
+      orchestrator.events.on('typing', typingCallback);
+
+      orchestrator.cancelGeneration('br:main');
+
+      expect(postMessageSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'cancel',
+          payload: expect.objectContaining({ groupId: 'br:main' }),
+        }),
+      );
+      expect(stateCallback).toHaveBeenCalledWith('idle');
+      expect(typingCallback).toHaveBeenCalledWith(
+        expect.objectContaining({ groupId: 'br:main', typing: false }),
+      );
+
+      orchestrator.events.off('state-change', stateCallback);
+      orchestrator.events.off('typing', typingCallback);
+      postMessageSpy.mockRestore();
+    });
+
+    it('cancelGeneration does nothing when already idle', () => {
+      (orchestrator as any).state = 'idle';
+      const postMessageSpy = vi.spyOn((orchestrator as any).agentWorker, 'postMessage');
+
+      orchestrator.cancelGeneration('br:main');
+
+      expect(postMessageSpy).not.toHaveBeenCalled();
+      postMessageSpy.mockRestore();
+    });
+
     // --- preloadModel ---
 
     it('preloadModel sends preload message to worker', () => {

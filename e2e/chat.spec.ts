@@ -31,4 +31,11 @@ test.describe('Chat page', () => {
     await textarea.fill('Hello, SafeClaw!');
     await expect(textarea).toHaveValue('Hello, SafeClaw!');
   });
+
+  test('shows send button by default, not stop button', async ({ page }) => {
+    const sendButton = page.locator('button[aria-label="Send message"]');
+    const stopButton = page.locator('button[aria-label="Stop generation"]');
+    await expect(sendButton).toBeVisible();
+    await expect(stopButton).not.toBeVisible();
+  });
 });

@@ -57,7 +57,10 @@ export function ChatPage() {
   const error = useOrchestratorStore((s) => s.error);
   const webllmProgress = useOrchestratorStore((s) => s.webllmProgress);
   const sendMessage = useOrchestratorStore((s) => s.sendMessage);
+  const cancelGeneration = useOrchestratorStore((s) => s.cancelGeneration);
   const loadHistory = useOrchestratorStore((s) => s.loadHistory);
+
+  const isGenerating = orchState !== 'idle';
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -160,7 +163,9 @@ export function ChatPage() {
         {/* Input */}
         <ChatInput
           onSend={sendMessage}
-          disabled={orchState !== 'idle'}
+          disabled={isGenerating}
+          isGenerating={isGenerating}
+          onStop={cancelGeneration}
         />
       </div>
     </div>
