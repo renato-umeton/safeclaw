@@ -142,6 +142,8 @@ export async function listSkills(options?: {
   cursor?: string;
 }): Promise<HubSkillsResponse> {
   const params = new URLSearchParams();
+  params.set('sort', 'downloads');
+  params.set('nonSuspicious', 'true');
   if (options?.limit !== undefined) params.set('limit', String(options.limit));
   if (options?.cursor) params.set('cursor', options.cursor);
 
