@@ -15,6 +15,8 @@ export interface ChatRequest {
   messages: ConversationMessage[];
   tools?: ToolDefinition[];
   signal?: AbortSignal;
+  /** Optional streaming callback — called with each token as it arrives (used by WebLLM) */
+  onToken?: (text: string) => void;
 }
 
 /** A normalized content block in provider-agnostic format */

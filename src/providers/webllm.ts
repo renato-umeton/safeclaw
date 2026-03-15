@@ -97,29 +97,45 @@ export class WebLLMProvider implements LLMProvider {
       throw new DOMException('The operation was aborted.', 'AbortError');
     }
 
-    const completion = await this.engine.chat.completions.create({
+    // Use streaming for progressive token display
+    const stream = await this.engine.chat.completions.create({
       messages,
       max_tokens: request.maxTokens,
-      temperature: 0.7,
+      temperature: 0.6,
+      stream: true,
     });
 
-    // Check if cancelled after inference completes
-    if (request.signal?.aborted) {
-      throw new DOMException('The operation was aborted.', 'AbortError');
-    }
+    // Accumulate tokens from the stream
+    let rawContent = '';
+    let streamUsage: any = undefined;
 
-    const choice = completion.choices[0];
-    const rawContent = choice?.message?.content || '';
+    for await (const chunk of stream) {
+      // Check cancellation during streaming
+      if (request.signal?.aborted) {
+        throw new DOMException('The operation was aborted.', 'AbortError');
+      }
+
+      const delta = chunk.choices?.[0]?.delta?.content;
+      if (delta) {
+        rawContent += delta;
+        request.onToken?.(delta);
+      }
+
+      // Usage info typically comes with the final chunk
+      if (chunk.usage) {
+        streamUsage = chunk.usage;
+      }
+    }
 
     // Parse tool calls from content (Qwen3 embeds them in the text)
     const content = parseToolCallsFromContent(rawContent);
 
     const hasToolUse = content.some((b) => b.type === 'tool_use');
 
-    const usage: TokenUsageInfo | undefined = completion.usage
+    const usage: TokenUsageInfo | undefined = streamUsage
       ? {
-          inputTokens: completion.usage.prompt_tokens || 0,
-          outputTokens: completion.usage.completion_tokens || 0,
+          inputTokens: streamUsage.prompt_tokens || 0,
+          outputTokens: streamUsage.completion_tokens || 0,
         }
       : undefined;
 
@@ -157,6 +173,7 @@ export class WebLLMProvider implements LLMProvider {
 
       this.engine = await webllm.CreateMLCEngine(mlcModelId, {
         initProgressCallback: progressCallback,
+        logLevel: 'SILENT',
       });
       this.currentModelId = mlcModelId;
     } finally {
