@@ -63,6 +63,7 @@ const PROVIDERS: ProviderInfo[] = [
       { value: 'qwen3-0.6b', label: 'Qwen3 0.6B (400 MB)' },
       { value: 'qwen3-1.7b', label: 'Qwen3 1.7B (1 GB)' },
       { value: 'qwen3-4b', label: 'Qwen3 4B (2.5 GB)' },
+      { value: 'qwen3.5-4b', label: 'Qwen3.5 4B (2.5 GB)' },
       { value: 'qwen3-30b', label: 'Qwen3 30B-A3B (16 GB)' },
     ],
   },

@@ -157,6 +157,9 @@ async function handleInvoke(payload: InvokePayload): Promise<void> {
         messages: currentMessages,
         tools: provider.supportsToolUse() ? TOOL_DEFINITIONS : undefined,
         signal,
+        onToken: provider.isLocal
+          ? (text: string) => post({ type: 'streaming-chunk', payload: { groupId, text } })
+          : undefined,
       };
 
       log(groupId, 'api-call', `API call #${iterations}`, `${currentMessages.length} messages in context`);

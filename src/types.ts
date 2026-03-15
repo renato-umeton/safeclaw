@@ -110,7 +110,8 @@ export type WorkerOutbound =
   | { type: 'compact-done'; payload: { groupId: string; summary: string } }
   | { type: 'token-usage'; payload: TokenUsage }
   | { type: 'task-created'; payload: { task: Task } }
-  | { type: 'webllm-progress'; payload: { model: string; progress: number; status: string } };
+  | { type: 'webllm-progress'; payload: { model: string; progress: number; status: string } }
+  | { type: 'streaming-chunk'; payload: { groupId: string; text: string } };
 
 /** Token usage info from the API */
 export interface TokenUsage {

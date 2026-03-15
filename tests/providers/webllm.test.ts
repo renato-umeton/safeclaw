@@ -1,13 +1,47 @@
 import { WebLLMProvider } from '../../src/providers/webllm';
 
+/** Helper: create a mock async iterator that yields streaming chunks */
+function createMockStream(chunks: string[], usage?: { prompt_tokens: number; completion_tokens: number }) {
+  return {
+    [Symbol.asyncIterator]() {
+      let index = 0;
+      return {
+        async next() {
+          if (index < chunks.length) {
+            const chunk = chunks[index++];
+            return {
+              done: false as const,
+              value: {
+                choices: [{ delta: { content: chunk } }],
+                usage: index === chunks.length ? usage : undefined,
+              },
+            };
+          }
+          return { done: true as const, value: undefined };
+        },
+      };
+    },
+  };
+}
+
+/** Helper: mock the create function to return a stream for given content */
+function mockStreamResponse(mockCreate: any, content: string, usage?: { prompt_tokens: number; completion_tokens: number }) {
+  mockCreate.mockImplementationOnce(() => Promise.resolve(createMockStream([content], usage)));
+}
+
 // Mock @mlc-ai/web-llm
 vi.mock('@mlc-ai/web-llm', () => ({
   CreateMLCEngine: vi.fn().mockResolvedValue({
     chat: {
       completions: {
-        create: vi.fn().mockResolvedValue({
-          choices: [{ message: { content: 'Hello from WebLLM' } }],
-          usage: { prompt_tokens: 10, completion_tokens: 5 },
+        create: vi.fn().mockImplementation((opts: any) => {
+          if (opts?.stream) {
+            return Promise.resolve(createMockStream(['Hello', ' from', ' WebLLM'], { prompt_tokens: 10, completion_tokens: 5 }));
+          }
+          return Promise.resolve({
+            choices: [{ message: { content: 'Hello from WebLLM' } }],
+            usage: { prompt_tokens: 10, completion_tokens: 5 },
+          });
         }),
       },
     },
@@ -123,14 +157,11 @@ describe('WebLLMProvider', () => {
     it('parses tool calls from content', async () => {
       const webllm = await import('@mlc-ai/web-llm');
       const mockEngine = await (webllm.CreateMLCEngine as any)();
-      mockEngine.chat.completions.create.mockResolvedValueOnce({
-        choices: [{
-          message: {
-            content: 'Let me help.\n<tool_call>\n{"name": "bash", "arguments": {"command": "ls"}}\n</tool_call>',
-          },
-        }],
-        usage: { prompt_tokens: 10, completion_tokens: 20 },
-      });
+      mockStreamResponse(
+        mockEngine.chat.completions.create,
+        'Let me help.\n<tool_call>\n{"name": "bash", "arguments": {"command": "ls"}}\n</tool_call>',
+        { prompt_tokens: 10, completion_tokens: 20 },
+      );
 
       const response = await provider.chat({
         model: 'qwen3-4b',
@@ -160,10 +191,9 @@ describe('WebLLMProvider', () => {
         return {
           chat: {
             completions: {
-              create: vi.fn().mockResolvedValue({
-                choices: [{ message: { content: 'test' } }],
-                usage: { prompt_tokens: 5, completion_tokens: 3 },
-              }),
+              create: vi.fn().mockResolvedValue(
+                createMockStream(['test'], { prompt_tokens: 5, completion_tokens: 3 }),
+              ),
             },
           },
         };
@@ -194,7 +224,7 @@ describe('WebLLMProvider', () => {
       (webllm.CreateMLCEngine as any).mockImplementationOnce(async () => {
         await loadingPromise;
         return {
-          chat: { completions: { create: vi.fn().mockResolvedValue({ choices: [{ message: { content: 'ok' } }], usage: null }) } },
+          chat: { completions: { create: vi.fn().mockResolvedValue(createMockStream(['ok'])) } },
         };
       });
 
@@ -226,14 +256,11 @@ describe('WebLLMProvider', () => {
     it('treats invalid JSON in tool_call as text (line 194)', async () => {
       const webllm = await import('@mlc-ai/web-llm');
       const mockEngine = await (webllm.CreateMLCEngine as any)();
-      mockEngine.chat.completions.create.mockResolvedValueOnce({
-        choices: [{
-          message: {
-            content: '<tool_call>\n{invalid json here}\n</tool_call>',
-          },
-        }],
-        usage: { prompt_tokens: 5, completion_tokens: 5 },
-      });
+      mockStreamResponse(
+        mockEngine.chat.completions.create,
+        '<tool_call>\n{invalid json here}\n</tool_call>',
+        { prompt_tokens: 5, completion_tokens: 5 },
+      );
 
       const response = await provider.chat({
         model: 'qwen3-4b',
@@ -254,10 +281,7 @@ describe('WebLLMProvider', () => {
     it('handles empty content string (line 208)', async () => {
       const webllm = await import('@mlc-ai/web-llm');
       const mockEngine = await (webllm.CreateMLCEngine as any)();
-      mockEngine.chat.completions.create.mockResolvedValueOnce({
-        choices: [{ message: { content: '' } }],
-        usage: null,
-      });
+      mockStreamResponse(mockEngine.chat.completions.create, '');
 
       const response = await provider.chat({
         model: 'qwen3-4b',
@@ -345,10 +369,9 @@ describe('WebLLMProvider', () => {
         return {
           chat: {
             completions: {
-              create: vi.fn().mockResolvedValue({
-                choices: [{ message: { content: 'ok' } }],
-                usage: { prompt_tokens: 1, completion_tokens: 1 },
-              }),
+              create: vi.fn().mockResolvedValue(
+                createMockStream(['ok'], { prompt_tokens: 1, completion_tokens: 1 }),
+              ),
             },
           },
         };
@@ -389,10 +412,7 @@ describe('WebLLMProvider', () => {
     it('handles response without usage info (lines 109-110 false branch)', async () => {
       const webllm = await import('@mlc-ai/web-llm');
       const mockEngine = await (webllm.CreateMLCEngine as any)();
-      mockEngine.chat.completions.create.mockResolvedValueOnce({
-        choices: [{ message: { content: 'no usage' } }],
-        // no usage field
-      });
+      mockStreamResponse(mockEngine.chat.completions.create, 'no usage');
 
       const response = await provider.chat({
         model: 'qwen3-4b',
@@ -407,14 +427,11 @@ describe('WebLLMProvider', () => {
     it('handles tool call with no arguments field (line 190)', async () => {
       const webllm = await import('@mlc-ai/web-llm');
       const mockEngine = await (webllm.CreateMLCEngine as any)();
-      mockEngine.chat.completions.create.mockResolvedValueOnce({
-        choices: [{
-          message: {
-            content: '<tool_call>\n{"name": "no_args_tool"}\n</tool_call>',
-          },
-        }],
-        usage: { prompt_tokens: 5, completion_tokens: 5 },
-      });
+      mockStreamResponse(
+        mockEngine.chat.completions.create,
+        '<tool_call>\n{"name": "no_args_tool"}\n</tool_call>',
+        { prompt_tokens: 5, completion_tokens: 5 },
+      );
 
       const response = await provider.chat({
         model: 'qwen3-4b',
@@ -426,6 +443,173 @@ describe('WebLLMProvider', () => {
       const toolBlock = response.content.find(b => b.type === 'tool_use');
       expect(toolBlock).toBeDefined();
       expect((toolBlock as any).input).toEqual({});
+    });
+
+    it('uses streaming and calls onToken callback for each chunk', async () => {
+      const onToken = vi.fn();
+      const response = await provider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+        onToken,
+      });
+
+      // onToken should be called for each streamed chunk
+      expect(onToken).toHaveBeenCalledTimes(3);
+      expect(onToken).toHaveBeenNthCalledWith(1, 'Hello');
+      expect(onToken).toHaveBeenNthCalledWith(2, ' from');
+      expect(onToken).toHaveBeenNthCalledWith(3, ' WebLLM');
+
+      // Full response should be accumulated from stream
+      expect(response.content).toHaveLength(1);
+      expect(response.content[0]).toMatchObject({ type: 'text', text: 'Hello from WebLLM' });
+      expect(response.stopReason).toBe('end_turn');
+    });
+
+    it('streams tool call content and parses accumulated result', async () => {
+      const webllm = await import('@mlc-ai/web-llm');
+      const mockEngine = await (webllm.CreateMLCEngine as any)();
+      const toolContent = 'Let me help.\n<tool_call>\n{"name": "bash", "arguments": {"command": "ls"}}\n</tool_call>';
+      const chunks = ['Let me help.\n', '<tool_call>\n{"name":', ' "bash", "arguments": {"command": "ls"}}\n</tool_call>'];
+      mockEngine.chat.completions.create.mockImplementationOnce((opts: any) => {
+        if (opts?.stream) {
+          return Promise.resolve(createMockStream(chunks, { prompt_tokens: 10, completion_tokens: 20 }));
+        }
+        return Promise.resolve({ choices: [{ message: { content: toolContent } }], usage: { prompt_tokens: 10, completion_tokens: 20 } });
+      });
+
+      const onToken = vi.fn();
+      const response = await provider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'list files' }],
+        tools: [{ name: 'bash', description: 'run command', input_schema: { type: 'object' as const, properties: {} } }],
+        onToken,
+      });
+
+      expect(response.stopReason).toBe('tool_use');
+      const toolBlock = response.content.find(b => b.type === 'tool_use');
+      expect(toolBlock).toBeDefined();
+      expect(onToken).toHaveBeenCalled();
+    });
+
+    it('handles streaming with empty delta content', async () => {
+      const webllm = await import('@mlc-ai/web-llm');
+      const mockEngine = await (webllm.CreateMLCEngine as any)();
+      // Stream with some empty/undefined deltas
+      const iterator = {
+        [Symbol.asyncIterator]() { return this; },
+        index: 0,
+        items: [
+          { choices: [{ delta: { content: 'Hello' } }] },
+          { choices: [{ delta: {} }] },  // no content field
+          { choices: [{ delta: { content: '' } }] },  // empty string
+          { choices: [{ delta: { content: ' world' } }] },
+        ],
+        async next() {
+          if (this.index < this.items.length) {
+            return { done: false, value: this.items[this.index++] };
+          }
+          return { done: true, value: undefined };
+        },
+      };
+      mockEngine.chat.completions.create.mockImplementationOnce(() => Promise.resolve(iterator));
+
+      const onToken = vi.fn();
+      const response = await provider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+        onToken,
+      });
+
+      // Only non-empty deltas should trigger onToken
+      expect(onToken).toHaveBeenCalledTimes(2);
+      expect(onToken).toHaveBeenNthCalledWith(1, 'Hello');
+      expect(onToken).toHaveBeenNthCalledWith(2, ' world');
+      expect(response.content[0]).toMatchObject({ type: 'text', text: 'Hello world' });
+    });
+
+    it('streams without onToken callback (no crash)', async () => {
+      // Should work fine without onToken - just accumulates response
+      const response = await provider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+        // no onToken
+      });
+
+      expect(response.content[0]).toMatchObject({ type: 'text', text: 'Hello from WebLLM' });
+    });
+
+    it('extracts usage from final streaming chunk', async () => {
+      const onToken = vi.fn();
+      const response = await provider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+        onToken,
+      });
+
+      expect(response.usage).toEqual({ inputTokens: 10, outputTokens: 5 });
+    });
+  });
+
+  describe('Qwen3.5 model support', () => {
+    it('returns context limit for qwen3.5-4b', () => {
+      expect(provider.getContextLimit('qwen3.5-4b')).toBe(32_768);
+    });
+
+    it('accepts qwen3.5-4b model for chat', async () => {
+      const freshProvider = new WebLLMProvider();
+      const response = await freshProvider.chat({
+        model: 'qwen3.5-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+      expect(response.content).toBeDefined();
+      expect(response.model).toBe('qwen3.5-4b');
+    });
+  });
+
+  describe('engine configuration', () => {
+    it('passes logLevel SILENT to CreateMLCEngine', async () => {
+      const webllm = await import('@mlc-ai/web-llm');
+      const freshProvider = new WebLLMProvider();
+
+      await freshProvider.chat({
+        model: 'qwen3-0.6b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+
+      expect(webllm.CreateMLCEngine).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ logLevel: 'SILENT' }),
+      );
+    });
+
+    it('uses temperature 0.6 for inference', async () => {
+      const webllm = await import('@mlc-ai/web-llm');
+      const mockEngine = await (webllm.CreateMLCEngine as any)();
+
+      await provider.chat({
+        model: 'qwen3-4b',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [{ role: 'user', content: 'hi' }],
+      });
+
+      expect(mockEngine.chat.completions.create).toHaveBeenCalledWith(
+        expect.objectContaining({ temperature: 0.6 }),
+      );
     });
   });
 });

@@ -66,6 +66,7 @@ type EventMap = {
   'context-compacted': { groupId: string; summary: string };
   'token-usage': import('./types.js').TokenUsage;
   'webllm-progress': { model: string; progress: number; status: string };
+  'streaming-chunk': { groupId: string; text: string };
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -587,6 +588,11 @@ export class Orchestrator {
 
       case 'webllm-progress': {
         this.events.emit('webllm-progress', msg.payload);
+        break;
+      }
+
+      case 'streaming-chunk': {
+        this.events.emit('streaming-chunk', msg.payload);
         break;
       }
     }
