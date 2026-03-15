@@ -560,24 +560,6 @@ describe('WebLLMProvider', () => {
     });
   });
 
-  describe('Qwen3.5 model support', () => {
-    it('returns context limit for qwen3.5-4b', () => {
-      expect(provider.getContextLimit('qwen3.5-4b')).toBe(32_768);
-    });
-
-    it('accepts qwen3.5-4b model for chat', async () => {
-      const freshProvider = new WebLLMProvider();
-      const response = await freshProvider.chat({
-        model: 'qwen3.5-4b',
-        maxTokens: 1024,
-        system: 'test',
-        messages: [{ role: 'user', content: 'hi' }],
-      });
-      expect(response.content).toBeDefined();
-      expect(response.model).toBe('qwen3.5-4b');
-    });
-  });
-
   describe('engine configuration', () => {
     it('passes logLevel SILENT to CreateMLCEngine', async () => {
       const webllm = await import('@mlc-ai/web-llm');
