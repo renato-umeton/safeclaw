@@ -6,8 +6,8 @@ import type { LLMProvider, ChatRequest, ChatResponse, ChatContentBlock, TokenUsa
 import { ANTHROPIC_API_URL, ANTHROPIC_API_VERSION } from '../config.js';
 
 const CONTEXT_LIMITS: Record<string, number> = {
-  'claude-opus-4-6': 200_000,
-  'claude-sonnet-4-6': 200_000,
+  'claude-opus-4-6': 1_000_000,
+  'claude-sonnet-4-6': 1_000_000,
   'claude-haiku-4-5-20251001': 200_000,
 };
 

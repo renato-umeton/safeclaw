@@ -32,7 +32,7 @@ describe('GeminiProvider', () => {
   });
 
   it('returns context limits for known models', () => {
-    expect(provider.getContextLimit('gemini-2.0-flash')).toBe(1_048_576);
+    expect(provider.getContextLimit('gemini-2.5-flash')).toBe(1_048_576);
   });
 
   it('returns default limit for unknown models', () => {
@@ -47,7 +47,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'You are helpful.',
         messages: [{ role: 'user', content: 'Hi' }],
@@ -65,7 +65,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -82,7 +82,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'list files' }],
@@ -103,7 +103,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -123,7 +123,7 @@ describe('GeminiProvider', () => {
 
       await expect(
         provider.chat({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-2.5-flash',
           maxTokens: 1024,
           system: 'test',
           messages: [{ role: 'user', content: 'hi' }],
@@ -138,7 +138,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -156,7 +156,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [
@@ -189,7 +189,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [
@@ -221,7 +221,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -244,7 +244,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -271,7 +271,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -296,7 +296,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -314,7 +314,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: undefined as any,
         messages: [{ role: 'user', content: 'hi' }],
@@ -337,7 +337,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
@@ -365,7 +365,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const response = await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'search' }],
@@ -385,7 +385,7 @@ describe('GeminiProvider', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       await provider.chat({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         maxTokens: 1024,
         system: 'test',
         messages: [{ role: 'user', content: 'hi' }],
