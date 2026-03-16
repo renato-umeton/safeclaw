@@ -71,7 +71,7 @@ describe('fetchWithCorsProxy', () => {
 
     expect(res).toBe(proxyResponse);
     expect(fetchSpy).toHaveBeenCalledTimes(3);
-    expect(fetchSpy.mock.calls[2][0]).toContain('corsproxy');
+    expect(fetchSpy.mock.calls[2][0]).toContain('corsproxy.org');
   });
 
   it('throws last error when all proxies fail', async () => {

@@ -56,7 +56,7 @@ export const FETCH_MAX_RESPONSE = 20_000;
  */
 export const CORS_PROXIES: readonly string[] = [
   'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?url=',
+  'https://corsproxy.org/?url=',
 ];
 
 /** Timeout (ms) for each individual fetch attempt (direct + each proxy) */
