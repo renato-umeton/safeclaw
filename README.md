@@ -15,7 +15,7 @@ Browser-native personal AI assistant with multi-provider LLM support. Zero infra
 
 ## Try It Now
 
-Visit [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com) to use SafeClaw instantly in your browser — no installation required. On mobile, use your browser's "Add to Home Screen" to install it as a PWA.
+Visit [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com) to use SafeClaw instantly in your Chrome browser — no installation required. On mobile, use your browser's "Add to Home Screen" to install it as a PWA.
 
 ## Quick Start (Development)
 
