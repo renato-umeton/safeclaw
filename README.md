@@ -204,7 +204,7 @@ SafeClaw is a proof of concept. All data stays in your browser, nothing is sent 
 
 This is a single-user local tool, not a multi-tenant platform.
 
-## Acknowledgements
+## ❤️ Acknowledgements
 
 This project stands on the shoulders of giants: [OpenClaw](https://github.com/openclaw) for the original open-source personal AI assistant, [OpenBrowserClaw](https://github.com/sachaa/openbrowserclaw) by sachaa for the initial intuition and browser-native container architecture, [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) by hesamsheikh for the curated community workflows, [ClawHub](https://clawhub.ai) for the skill marketplace, [WebLLM](https://webllm.mlc.ai/) for local in-browser model inference, [Chromium](https://www.chromium.org/) and its built-in AI APIs, and the [PWA](https://web.dev/progressive-web-apps/) standards that make installable browser apps possible. The following open-source packages are also used here and much appreciated: [Playwright](https://playwright.dev/), [Vitest](https://vitest.dev/), [React](https://react.dev/), [React Router](https://reactrouter.com/), [React Markdown](https://github.com/remarkjs/react-markdown), [Vite](https://vite.dev/), [TypeScript](https://www.typescriptlang.org/), [TailwindCSS](https://tailwindcss.com/), [DaisyUI](https://daisyui.com/), [Zustand](https://github.com/pmndrs/zustand), [Lucide](https://lucide.dev/), [Testing Library](https://testing-library.com/), [unified](https://unifiedjs.com/) (rehype & remark), [happy-dom](https://github.com/nicedoc/happy-dom), [fake-indexeddb](https://github.com/nicedoc/fake-indexeddb), [PDF.js](https://mozilla.github.io/pdf.js/) (pdfjs-dist), and [Mammoth](https://github.com/mwilliamson/mammoth.js).
 
