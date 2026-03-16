@@ -111,10 +111,12 @@ test.describe('Settings page', () => {
     const cvContent = 'Senior developer with Python and JavaScript experience';
     const fileInput = page.locator('input[type="file"]');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Playwright requires Node Buffer at runtime
+    const buffer = (globalThis as any).Buffer.from(cvContent) as Uint8Array;
     await fileInput.setInputFiles({
       name: 'my_resume.txt',
       mimeType: 'text/plain',
-      buffer: Uint8Array.from(cvContent.split('').map(c => c.charCodeAt(0))),
+      buffer,
     });
 
     const textarea = page.locator('textarea');
