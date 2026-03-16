@@ -47,6 +47,30 @@ const TEST_JSON = JSON.stringify({
   status: 'ok',
 });
 
+const NPMJS_PACKAGE_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head><title>express - npm</title><style>body{font-family:sans-serif}</style></head>
+<body>
+<header><nav><a href="/">npm</a></nav></header>
+<main>
+<h1>express</h1>
+<p>Fast, unopinionated, minimalist web framework for Node.js</p>
+<div class="version">5.1.0</div>
+<div class="weekly-downloads">35,000,000</div>
+<section class="readme"><h2>Installation</h2><pre>npm install express</pre></section>
+</main>
+<script>console.log("analytics")</script>
+</body>
+</html>`;
+
+const NPMJS_REGISTRY_JSON = JSON.stringify({
+  name: 'express',
+  version: '5.1.0',
+  description: 'Fast, unopinionated, minimalist web framework',
+  license: 'MIT',
+  dependencies: { 'accepts': '~2.0.0', 'body-parser': '~2.2.0' },
+});
+
 let server: Server;
 let baseUrl: string;
 
@@ -92,6 +116,17 @@ function handler(req: IncomingMessage, res: ServerResponse) {
   } else if (url === '/entities') {
     res.writeHead(200, { 'Content-Type': 'text/html', ...CORS_HEADERS });
     res.end('<p>Tom &amp; Jerry &lt;3&gt; &quot;fun&quot; &#39;yes&#39; &nbsp;</p>');
+  } else if (url === '/npmjs-package') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...CORS_HEADERS });
+    res.end(NPMJS_PACKAGE_HTML);
+  } else if (url === '/npmjs-registry') {
+    res.writeHead(200, { 'Content-Type': 'application/json', ...CORS_HEADERS });
+    res.end(NPMJS_REGISTRY_JSON);
+  } else if (url === '/npmjs-large') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...CORS_HEADERS });
+    // Simulate a large npm package page (~30KB)
+    const readme = '<div class="readme">' + 'Lorem ipsum dolor sit amet. '.repeat(1000) + '</div>';
+    res.end(`<!DOCTYPE html><html><body><h1>large-package</h1>${readme}</body></html>`);
   } else {
     res.writeHead(200, { 'Content-Type': 'text/html', ...CORS_HEADERS });
     res.end(TEST_HTML);
@@ -168,5 +203,48 @@ describe('fetch_url integration — local test server', () => {
     expect(response.status).toBe(200);
     const body = await response.text();
     expect(body).toContain('Example Domain');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// npmjs.com-style tests — simulates fetching package pages and registry API
+// Relates to: https://github.com/renato-umeton/safeclaw/issues/99
+// ---------------------------------------------------------------------------
+
+describe('fetch_url integration — npmjs.com-style content', () => {
+  it('fetches a package page (HTML) and returns parseable content', async () => {
+    const response = await fetchWithCorsProxy(`${baseUrl}/npmjs-package`);
+
+    expect(response.status).toBe(200);
+    const contentType = response.headers.get('content-type') || '';
+    expect(contentType).toContain('text/html');
+
+    const body = await response.text();
+    expect(body).toContain('express');
+    expect(body).toContain('Fast, unopinionated');
+  });
+
+  it('fetches a registry JSON endpoint and parses package metadata', async () => {
+    const response = await fetchWithCorsProxy(`${baseUrl}/npmjs-registry`);
+
+    expect(response.status).toBe(200);
+    const contentType = response.headers.get('content-type') || '';
+    expect(contentType).toContain('application/json');
+
+    const body = await response.text();
+    const pkg = JSON.parse(body);
+    expect(pkg.name).toBe('express');
+    expect(pkg).toHaveProperty('version');
+    expect(pkg).toHaveProperty('description');
+  });
+
+  it('handles large HTML pages by returning full content for proxy truncation', async () => {
+    const response = await fetchWithCorsProxy(`${baseUrl}/npmjs-large`);
+
+    expect(response.status).toBe(200);
+    const body = await response.text();
+    // Content exceeds FETCH_MAX_RESPONSE — the executeTool layer truncates,
+    // but fetchWithCorsProxy itself returns the full response
+    expect(body.length).toBeGreaterThan(20_000);
   });
 });

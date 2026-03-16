@@ -470,15 +470,24 @@ export async function fetchWithCorsProxy(
 
     // Try each CORS proxy in order
     let lastError: unknown = directError;
+    let lastErrorResponse: Response | undefined;
     for (const proxy of CORS_PROXIES) {
       try {
         const proxiedUrl = proxy + encodeURIComponent(url);
         const res = await fetch(proxiedUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT) });
+        // If the proxy returned an HTTP error, try the next proxy
+        if (!res.ok) {
+          lastErrorResponse = res;
+          continue;
+        }
         return res;
       } catch (proxyError) {
         lastError = proxyError;
+        lastErrorResponse = undefined;
       }
     }
+    // If the last proxy returned an HTTP error (not a network throw), return it
+    if (lastErrorResponse) return lastErrorResponse;
     throw lastError;
   }
 }

@@ -131,4 +131,93 @@ describe('fetchWithCorsProxy', () => {
     const proxiedUrl = fetchSpy.mock.calls[1][0] as string;
     expect(proxiedUrl).toContain(encodeURIComponent(url));
   });
+
+  // -------------------------------------------------------------------------
+  // Proxy HTTP error fallback — fixes #99
+  // When a CORS proxy returns an HTTP error (e.g. 403), the function should
+  // try the next proxy instead of returning the error response.
+  // -------------------------------------------------------------------------
+
+  it('tries next proxy when first proxy returns HTTP 403', async () => {
+    const corsError = new TypeError('Failed to fetch');
+    const proxy403 = new Response('Forbidden', { status: 403 });
+    const proxyOk = new Response('<html><body>npmjs page</body></html>', { status: 200 });
+
+    fetchSpy
+      .mockRejectedValueOnce(corsError)    // direct fetch fails (CORS)
+      .mockResolvedValueOnce(proxy403)     // first proxy returns 403
+      .mockResolvedValueOnce(proxyOk);     // second proxy succeeds
+
+    const res = await fetchWithCorsProxy('https://www.npmjs.com/');
+
+    expect(res).toBe(proxyOk);
+    expect(res.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    // Verify second proxy was tried
+    expect(fetchSpy.mock.calls[2][0]).toContain('corsproxy');
+  });
+
+  it('tries next proxy when first proxy returns HTTP 500', async () => {
+    const corsError = new TypeError('Failed to fetch');
+    const proxy500 = new Response('Internal Server Error', { status: 500 });
+    const proxyOk = new Response('{"name":"express"}', { status: 200 });
+
+    fetchSpy
+      .mockRejectedValueOnce(corsError)
+      .mockResolvedValueOnce(proxy500)
+      .mockResolvedValueOnce(proxyOk);
+
+    const res = await fetchWithCorsProxy('https://registry.npmjs.org/express');
+
+    expect(res).toBe(proxyOk);
+    expect(res.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('returns last proxy error response when all proxies return HTTP errors', async () => {
+    const corsError = new TypeError('Failed to fetch');
+    const proxy403 = new Response('Forbidden', { status: 403 });
+    const proxy502 = new Response('Bad Gateway', { status: 502 });
+
+    fetchSpy
+      .mockRejectedValueOnce(corsError)
+      .mockResolvedValueOnce(proxy403)
+      .mockResolvedValueOnce(proxy502);
+
+    const res = await fetchWithCorsProxy('https://www.npmjs.com/package/react');
+
+    // When all proxies return HTTP errors, return the last one
+    expect(res.status).toBe(502);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('returns proxy response immediately when status is ok (2xx)', async () => {
+    const corsError = new TypeError('Failed to fetch');
+    const proxyOk = new Response('page content', { status: 200 });
+
+    fetchSpy
+      .mockRejectedValueOnce(corsError)
+      .mockResolvedValueOnce(proxyOk);
+
+    const res = await fetchWithCorsProxy('https://www.npmjs.com/');
+
+    expect(res).toBe(proxyOk);
+    // Should NOT try the second proxy since the first one succeeded
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('handles mix of HTTP errors and network errors across proxies', async () => {
+    const corsError = new TypeError('Failed to fetch');
+    const proxy403 = new Response('Forbidden', { status: 403 });
+    const networkError = new TypeError('Network error');
+
+    fetchSpy
+      .mockRejectedValueOnce(corsError)     // direct fetch fails
+      .mockResolvedValueOnce(proxy403)       // first proxy: HTTP 403
+      .mockRejectedValueOnce(networkError);  // second proxy: network error
+
+    // When last attempt is a network error, it should throw
+    await expect(fetchWithCorsProxy('https://www.npmjs.com/')).rejects.toThrow('Network error');
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
 });
