@@ -33,7 +33,7 @@ describe('Layout', () => {
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it('renders SafeClaw branding with icon and version', () => {
+  it('renders SafeClaw branding with icon and version in navbar center', () => {
     const { container } = render(
       <MemoryRouter>
         <Layout />
@@ -45,6 +45,11 @@ describe('Layout', () => {
     expect(icon).toBeTruthy();
     // Should display version
     expect(container.textContent).toMatch(/v\d+\.\d+\.\d+/);
+    // App name and version should be in the navbar-center section
+    const navbarCenter = container.querySelector('.navbar-center');
+    expect(navbarCenter).toBeTruthy();
+    expect(navbarCenter!.textContent).toContain('SafeClaw');
+    expect(navbarCenter!.textContent).toMatch(/v\d+\.\d+\.\d+/);
   });
 
   it('renders nav items with correct labels', () => {
