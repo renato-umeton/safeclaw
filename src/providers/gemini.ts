@@ -8,9 +8,9 @@ import type { ConversationMessage, ContentBlock, ToolDefinition } from '../types
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 const CONTEXT_LIMITS: Record<string, number> = {
-  'gemini-2.5-pro-preview-06-05': 1_048_576,
-  'gemini-2.0-flash': 1_048_576,
-  'gemini-2.0-flash-lite': 1_048_576,
+  'gemini-2.5-pro': 1_048_576,
+  'gemini-2.5-flash': 1_048_576,
+  'gemini-2.5-flash-lite': 1_048_576,
 };
 
 export class GeminiProvider implements LLMProvider {

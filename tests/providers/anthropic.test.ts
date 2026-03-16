@@ -32,8 +32,8 @@ describe('AnthropicProvider', () => {
   });
 
   it('returns context limits for known models', () => {
-    expect(provider.getContextLimit('claude-sonnet-4-6')).toBe(200_000);
-    expect(provider.getContextLimit('claude-opus-4-6')).toBe(200_000);
+    expect(provider.getContextLimit('claude-sonnet-4-6')).toBe(1_000_000);
+    expect(provider.getContextLimit('claude-opus-4-6')).toBe(1_000_000);
   });
 
   it('returns default limit for unknown models', () => {

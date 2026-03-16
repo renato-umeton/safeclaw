@@ -309,7 +309,7 @@ describe('MessageBubble', () => {
   it('displays known model labels correctly', () => {
     const models = [
       { id: 'claude-opus-4-6', label: 'Opus 4.6' },
-      { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+      { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
       { id: 'qwen3-4b', label: 'Qwen3 4B' },
       { id: 'gemini-nano', label: 'Gemini Nano' },
     ];

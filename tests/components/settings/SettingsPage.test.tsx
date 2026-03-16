@@ -174,7 +174,7 @@ describe('SettingsPage', () => {
     });
 
     expect(mockSetProviderId).toHaveBeenCalledWith('gemini');
-    expect(mockSetModel).toHaveBeenCalledWith('gemini-2.5-pro-preview-06-05');
+    expect(mockSetModel).toHaveBeenCalledWith('gemini-2.5-pro');
   });
 
   // ---- Model selection ----
