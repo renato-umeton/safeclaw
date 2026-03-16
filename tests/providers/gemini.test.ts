@@ -182,6 +182,79 @@ describe('GeminiProvider', () => {
       expect(body.contents).toHaveLength(3);
     });
 
+    it('populates functionResponse.name from preceding tool_use block', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockFetchResponse(createGeminiResponse('ok'))
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await provider.chat({
+        model: 'gemini-2.5-flash',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [
+          { role: 'user', content: 'hello' },
+          {
+            role: 'assistant',
+            content: [
+              { type: 'text', text: 'Let me check' },
+              { type: 'tool_use', id: 't1', name: 'fetch_url', input: { url: 'https://example.com' } },
+              { type: 'tool_use', id: 't2', name: 'bash', input: { command: 'ls' } },
+            ],
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'tool_result', tool_use_id: 't1', content: 'page content' },
+              { type: 'tool_result', tool_use_id: 't2', content: 'file.txt' },
+            ],
+          },
+        ],
+      });
+
+      const [, opts] = fetchMock.mock.calls[0];
+      const body = JSON.parse(opts.body);
+
+      // The tool_result message (index 2) should have functionResponse parts with correct names
+      const toolResultParts = body.contents[2].parts;
+      expect(toolResultParts[0].functionResponse.name).toBe('fetch_url');
+      expect(toolResultParts[1].functionResponse.name).toBe('bash');
+    });
+
+    it('uses "unknown" as fallback when tool_use_id has no matching tool_use', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        mockFetchResponse(createGeminiResponse('ok'))
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await provider.chat({
+        model: 'gemini-2.5-flash',
+        maxTokens: 1024,
+        system: 'test',
+        messages: [
+          { role: 'user', content: 'hello' },
+          {
+            role: 'assistant',
+            content: [
+              { type: 'text', text: 'response' },
+            ],
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'tool_result', tool_use_id: 'orphan-id', content: 'result' },
+            ],
+          },
+        ],
+      });
+
+      const [, opts] = fetchMock.mock.calls[0];
+      const body = JSON.parse(opts.body);
+
+      const toolResultParts = body.contents[2].parts;
+      expect(toolResultParts[0].functionResponse.name).toBe('unknown');
+    });
+
     it('skips empty parts array from content blocks', async () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockFetchResponse(createGeminiResponse('ok'))

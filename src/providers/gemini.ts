@@ -76,6 +76,19 @@ export class GeminiProvider implements LLMProvider {
 function convertMessages(messages: ConversationMessage[]): GeminiContent[] {
   const contents: GeminiContent[] = [];
 
+  // Build a lookup from tool_use_id → tool name across all messages,
+  // so tool_result blocks can reference the correct function name.
+  const toolNameById = new Map<string, string>();
+  for (const msg of messages) {
+    if (typeof msg.content !== 'string') {
+      for (const block of msg.content as ContentBlock[]) {
+        if (block.type === 'tool_use') {
+          toolNameById.set(block.id, block.name);
+        }
+      }
+    }
+  }
+
   for (const msg of messages) {
     const role = msg.role === 'assistant' ? 'model' : 'user';
 
@@ -97,7 +110,7 @@ function convertMessages(messages: ConversationMessage[]): GeminiContent[] {
         } else if (block.type === 'tool_result') {
           parts.push({
             functionResponse: {
-              name: '', // Gemini uses name but we track by ID — we'll fill this in
+              name: toolNameById.get(block.tool_use_id) || 'unknown',
               response: { content: block.content },
             },
           });
