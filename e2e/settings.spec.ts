@@ -95,4 +95,32 @@ test.describe('Settings page', () => {
     await expect(page.locator('text=Model weights')).toBeVisible();
     await expect(page.locator('text=Other data')).toBeVisible();
   });
+
+  // --- CV Upload E2E tests ---
+
+  test('profile section has CV upload button', async ({ page }) => {
+    await expect(page.locator('button', { hasText: 'Upload CV' })).toBeVisible();
+  });
+
+  test('CV file input accepts pdf, docx, txt, and md formats', async ({ page }) => {
+    const fileInput = page.locator('input[type="file"]');
+    await expect(fileInput).toHaveAttribute('accept', '.txt,.md,.pdf,.docx');
+  });
+
+  test('uploading a text CV populates the resume textarea', async ({ page }) => {
+    const cvContent = 'Senior developer with Python and JavaScript experience';
+    const fileInput = page.locator('input[type="file"]');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Playwright requires Node Buffer at runtime
+    const buffer = (globalThis as any).Buffer.from(cvContent) as Uint8Array;
+    await fileInput.setInputFiles({
+      name: 'my_resume.txt',
+      mimeType: 'text/plain',
+      buffer,
+    });
+
+    const textarea = page.locator('textarea');
+    await expect(textarea).toHaveValue(cvContent);
+    await expect(page.locator('text=my_resume.txt')).toBeVisible();
+  });
 });

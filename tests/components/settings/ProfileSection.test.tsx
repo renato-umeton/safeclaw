@@ -11,11 +11,20 @@ vi.mock('../../../src/db', () => ({
   clearUserProfile: (...args: any[]) => mockClearUserProfile(...args),
 }));
 
+const mockConvertCvToText = vi.fn();
+
+vi.mock('../../../src/cv-converter', () => ({
+  convertCvToText: (...args: any[]) => mockConvertCvToText(...args),
+  SUPPORTED_CV_EXTENSIONS: ['.txt', '.md', '.pdf', '.docx'],
+}));
+
 describe('ProfileSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockGetUserProfile.mockResolvedValue(null);
+    // Default: convertCvToText resolves with file text content
+    mockConvertCvToText.mockImplementation(async (file: File) => file.text());
   });
 
   afterEach(() => {
@@ -144,11 +153,11 @@ describe('ProfileSection', () => {
     expect(screen.getByText(/upload cv/i)).toBeInTheDocument();
   });
 
-  it('renders a file input that accepts text and PDF files', () => {
+  it('renders a file input that accepts txt, md, pdf, and docx files', () => {
     render(<ProfileSection />);
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeNull();
-    expect(fileInput.accept).toBe('.txt,.md,.pdf');
+    expect(fileInput.accept).toBe('.txt,.md,.pdf,.docx');
   });
 
   it('reads uploaded text file and populates resume textarea', async () => {
@@ -162,7 +171,6 @@ describe('ProfileSection', () => {
       fireEvent.change(fileInput, { target: { files: [file] } });
     });
 
-    // Wait for file reading to complete
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/resume.*skills/i)).toHaveValue(cvContent);
     });
@@ -254,5 +262,100 @@ describe('ProfileSection', () => {
 
     // Resume should remain empty
     expect(screen.getByPlaceholderText(/resume.*skills/i)).toHaveValue('');
+  });
+
+  // --- PDF/DOCX conversion tests ---
+
+  it('converts PDF file and populates resume textarea', async () => {
+    mockConvertCvToText.mockResolvedValue('Extracted PDF text content');
+
+    render(<ProfileSection />);
+
+    const file = new File([new ArrayBuffer(100)], 'resume.pdf', { type: 'application/pdf' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/resume.*skills/i)).toHaveValue('Extracted PDF text content');
+      expect(screen.getByText('resume.pdf')).toBeInTheDocument();
+    });
+
+    expect(mockConvertCvToText).toHaveBeenCalledWith(file);
+  });
+
+  it('converts DOCX file and populates resume textarea', async () => {
+    mockConvertCvToText.mockResolvedValue('Extracted DOCX text content');
+
+    render(<ProfileSection />);
+
+    const file = new File([new ArrayBuffer(100)], 'resume.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/resume.*skills/i)).toHaveValue('Extracted DOCX text content');
+      expect(screen.getByText('resume.docx')).toBeInTheDocument();
+    });
+
+    expect(mockConvertCvToText).toHaveBeenCalledWith(file);
+  });
+
+  it('shows error message when conversion fails', async () => {
+    mockConvertCvToText.mockRejectedValue(new Error('Unsupported format: .doc (legacy Word). Please save as .docx and try again.'));
+
+    render(<ProfileSection />);
+
+    const file = new File([new ArrayBuffer(50)], 'old_resume.doc', { type: 'application/msword' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/unsupported format.*docx/i)).toBeInTheDocument();
+    });
+
+    // Resume should remain empty
+    expect(screen.getByPlaceholderText(/resume.*skills/i)).toHaveValue('');
+  });
+
+  it('clears previous error when new file is uploaded successfully', async () => {
+    // First upload fails
+    mockConvertCvToText.mockRejectedValueOnce(new Error('Invalid file'));
+
+    render(<ProfileSection />);
+
+    const badFile = new File([new ArrayBuffer(10)], 'bad.doc', { type: 'application/msword' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [badFile] } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Invalid file')).toBeInTheDocument();
+    });
+
+    // Second upload succeeds
+    mockConvertCvToText.mockResolvedValueOnce('Good CV content');
+    const goodFile = new File(['Good CV content'], 'resume.txt', { type: 'text/plain' });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [goodFile] } });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Invalid file')).toBeNull();
+      expect(screen.getByPlaceholderText(/resume.*skills/i)).toHaveValue('Good CV content');
+    });
   });
 });

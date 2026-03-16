@@ -3,8 +3,9 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef, useState } from 'react';
-import { User, Check, Upload, FileText } from 'lucide-react';
+import { User, Check, Upload, FileText, AlertCircle } from 'lucide-react';
 import { getUserProfile, saveUserProfile, clearUserProfile } from '../../db.js';
+import { convertCvToText, SUPPORTED_CV_EXTENSIONS } from '../../cv-converter.js';
 import type { UserProfile } from '../../types.js';
 
 const EMPTY_LINKS = { linkedin: '', instagram: '', github: '', twitter: '', reddit: '' };
@@ -14,6 +15,8 @@ export function ProfileSection() {
   const [cvFileName, setCvFileName] = useState('');
   const [socialLinks, setSocialLinks] = useState({ ...EMPTY_LINKS });
   const [saved, setSaved] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [converting, setConverting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -30,17 +33,21 @@ export function ProfileSection() {
     setSocialLinks((prev) => ({ ...prev, [platform]: value }));
   }
 
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = reader.result as string;
+    setUploadError('');
+    setConverting(true);
+    try {
+      const text = await convertCvToText(file);
       setResumeText(text);
       setCvFileName(file.name);
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      setUploadError((err as Error).message || 'Failed to convert file');
+    } finally {
+      setConverting(false);
+    }
   }
 
   async function handleSave() {
@@ -85,14 +92,26 @@ export function ProfileSection() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md,.pdf"
+              accept={SUPPORTED_CV_EXTENSIONS.join(',')}
               className="hidden"
               onChange={handleFileUpload}
             />
-            {cvFileName && (
+            {converting && (
+              <span className="text-xs opacity-70 flex items-center gap-1">
+                <span className="loading loading-spinner loading-xs" />
+                Converting...
+              </span>
+            )}
+            {cvFileName && !converting && (
               <span className="text-xs opacity-70 flex items-center gap-1">
                 <FileText className="w-3.5 h-3.5" />
                 {cvFileName}
+              </span>
+            )}
+            {uploadError && (
+              <span className="text-xs text-error flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {uploadError}
               </span>
             )}
           </div>
