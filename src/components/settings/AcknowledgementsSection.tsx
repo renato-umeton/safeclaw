@@ -43,7 +43,9 @@ export function AcknowledgementsSection() {
           <a href="https://unifiedjs.com/" className="link link-primary" target="_blank" rel="noopener noreferrer">unified</a>{' '}
           (rehype & remark),{' '}
           <a href="https://github.com/nicedoc/happy-dom" className="link link-primary" target="_blank" rel="noopener noreferrer">happy-dom</a>,{' '}
-          and <a href="https://github.com/nicedoc/fake-indexeddb" className="link link-primary" target="_blank" rel="noopener noreferrer">fake-indexeddb</a>.
+          <a href="https://github.com/nicedoc/fake-indexeddb" className="link link-primary" target="_blank" rel="noopener noreferrer">fake-indexeddb</a>,{' '}
+          <a href="https://mozilla.github.io/pdf.js/" className="link link-primary" target="_blank" rel="noopener noreferrer">PDF.js</a> (pdfjs-dist),{' '}
+          and <a href="https://github.com/mwilliamson/mammoth.js" className="link link-primary" target="_blank" rel="noopener noreferrer">Mammoth</a>.
         </p>
       </div>
     </div>

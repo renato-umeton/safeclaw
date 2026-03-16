@@ -263,6 +263,16 @@ You can run the check locally before pushing:
 bash scripts/check-version-docs.sh master
 ```
 
+## Library Acknowledgements (Mandatory)
+
+Every third-party library added as a dependency (production or dev) **must** be acknowledged at the end of the existing acknowledgements list in **all three** locations:
+
+1. `src/components/settings/AcknowledgementsSection.tsx` — in-app Settings card
+2. `README.md` — Acknowledgements section
+3. `docs/website/index.html` — website footer attribution
+
+Add new entries at the end of the current package list, before the closing period. Include the library name, a link to its homepage or repository, and a brief note if the name isn't self-explanatory (e.g., "PDF.js (pdfjs-dist)").
+
 ## Pull Request Checklist
 
 1. Tests written **before** implementation (TDD) — both unit and E2E
@@ -272,3 +282,4 @@ bash scripts/check-version-docs.sh master
 5. `npm run typecheck` passes
 6. No new `any` types without justification
 7. If minor/major version bump: all four release doc files updated (see above)
+8. If new dependencies added: acknowledged in all three acknowledgement locations (see above)

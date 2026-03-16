@@ -208,6 +208,16 @@ test('renders all settings sections', async ({ page }) => {
 - Follow existing patterns — read the neighboring source files before writing new code.
 - Keep changes focused. Don't refactor unrelated code in the same PR.
 
+## Library Acknowledgements — Required for New Dependencies
+
+Every third-party library added as a dependency (production or dev) **must** be acknowledged at the end of the existing acknowledgements list in all three locations:
+
+1. **`src/components/settings/AcknowledgementsSection.tsx`** — in-app Settings card
+2. **`README.md`** — Acknowledgements section
+3. **`docs/website/index.html`** — website footer attribution
+
+Add new entries at the end of the current package list, before the closing period. Include the library name and a link to its homepage or repository. If the npm package name differs from the display name, add a parenthetical (e.g., "PDF.js (pdfjs-dist)").
+
 ## Pull Request Checklist
 
 Before submitting your PR, verify:
@@ -219,6 +229,7 @@ Before submitting your PR, verify:
 - [ ] `npm run typecheck` — no type errors
 - [ ] No new `any` types without justification in a comment
 - [ ] Changes are focused and minimal — no unrelated refactors
+- [ ] If new dependencies added: acknowledged in all three acknowledgement locations (see above)
 
 ## Releases
 

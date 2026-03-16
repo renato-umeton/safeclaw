@@ -79,6 +79,8 @@ describe('AcknowledgementsSection', () => {
       ['unified', 'https://unifiedjs.com/'],
       ['happy-dom', 'https://github.com/nicedoc/happy-dom'],
       ['fake-indexeddb', 'https://github.com/nicedoc/fake-indexeddb'],
+      ['PDF.js', 'https://mozilla.github.io/pdf.js/'],
+      ['Mammoth', 'https://github.com/mwilliamson/mammoth.js'],
     ];
     for (const [name, href] of packages) {
       const link = screen.getByRole('link', { name });
