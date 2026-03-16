@@ -7,8 +7,8 @@ import { test, expect } from '@playwright/test';
 test.describe('App boot', () => {
   test('loads the app and renders the layout', async ({ page }) => {
     await page.goto('/');
-    // The app should render the SafeClaw branding in the navbar
-    await expect(page.locator('.navbar >> text=SafeClaw')).toBeVisible();
+    // The app should render the SafeClaw branding in the navbar center
+    await expect(page.locator('.navbar-center >> text=SafeClaw')).toBeVisible();
   });
 
   test('shows loading state while initializing', async ({ page }) => {

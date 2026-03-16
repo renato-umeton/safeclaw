@@ -29,29 +29,32 @@ export function Layout() {
       {/* ---- Top navbar ---- */}
       <div className="navbar bg-base-200 border-b border-base-300 safe-area-top px-4 min-h-14">
         <div className="navbar-start">
-          <span className="text-xl font-bold select-none flex items-center gap-1.5">
-            <img src="/favicon.svg" alt="SafeClaw" className="w-7 h-7 rounded-full" />
-            <span className="hidden sm:inline">SafeClaw</span>
-            <span className="hidden sm:inline text-xs font-normal opacity-60">v{APP_VERSION}</span>
-          </span>
+          <img src="/favicon.svg" alt="SafeClaw" className="w-7 h-7 rounded-full" />
         </div>
 
-        {/* Desktop tabs */}
-        <div className="navbar-center hidden sm:flex">
-          <div role="tablist" className="tabs tabs-box">
-            {navItems.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                role="tab"
-                className={({ isActive }) =>
-                  `tab gap-1.5 ${isActive ? 'tab-active' : ''}`
-                }
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </NavLink>
-            ))}
+        <div className="navbar-center flex flex-col items-center gap-1">
+          <span className="text-xl font-bold select-none flex items-center gap-1.5">
+            SafeClaw
+            <span className="text-xs font-normal opacity-60">v{APP_VERSION}</span>
+          </span>
+
+          {/* Desktop tabs */}
+          <div className="hidden sm:flex">
+            <div role="tablist" className="tabs tabs-box">
+              {navItems.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  role="tab"
+                  className={({ isActive }) =>
+                    `tab gap-1.5 ${isActive ? 'tab-active' : ''}`
+                  }
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
           </div>
         </div>
 
