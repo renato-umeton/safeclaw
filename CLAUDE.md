@@ -21,27 +21,74 @@ src/
   tools.ts               # Tool definitions for the LLM API
   router.ts              # Message router (browser/telegram channels)
   task-scheduler.ts      # Cron expression evaluation & scheduling
+  ulid.ts                # ULID generator (no dependencies)
+  markdown.ts            # Lightweight Markdown → HTML renderer
+  cv-converter.ts        # CV file format converter (PDF/DOCX → plain text)
+  recommendations.ts     # Use-case recommendation engine (pure functions)
+  skill-hub.ts           # ClawHub Skill Hub API client
+  use-cases.ts           # 37 curated use-case workflows (static data)
+  use-cases-remote.ts    # Remote use-case fetcher (GitHub → IndexedDB cache)
+  vm.ts                  # WebVM wrapper (v86-based Alpine Linux in WASM)
+  version-check.ts       # Semver bump detection & release doc enforcement
+  version-checker.ts     # Runtime version checker (GitHub Releases API)
+  globals.d.ts           # Global type definitions (__APP_VERSION__, etc.)
   providers/             # LLM provider abstraction layer
+    types.ts             # Provider interface & shared types
+    index.ts             # Re-export barrel file
     router.ts            # Quality-first provider routing
     anthropic.ts         # Anthropic Claude API
     gemini.ts            # Google Gemini API
     webllm.ts            # WebLLM (local Qwen3 via WebGPU)
     chrome-ai.ts         # Chrome built-in AI (Gemini Nano)
-  channels/              # Message channels (browser-chat, telegram)
-  components/            # React UI components
+  channels/              # Message channels
+    browser-chat.ts      # Browser chat channel
+    telegram.ts          # Telegram bot channel
+  hooks/                 # React custom hooks
+    use-pwa-install.ts   # PWA install prompt hook
+    use-pwa-update.ts    # PWA service worker update hook
   stores/                # Zustand state stores
-  version-check.ts       # Semver bump detection & release doc enforcement
+    orchestrator-store.ts  # Core orchestrator state
+    theme-store.ts         # Theme (light/dark/system) state
+    skill-hub-store.ts     # Skill hub data & loading state
+    file-viewer-store.ts   # File viewer modal state
+  components/            # React UI components
+    chat/                # Chat page (ChatPage, ChatInput, ChatActions,
+                         #   MessageList, MessageBubble, ContextBar,
+                         #   ActivityLog, ToolActivity, CodeBlock,
+                         #   TypingIndicator)
+    files/               # Files page (FilesPage, FileViewerModal)
+    layout/              # App layout (Layout, ThemeToggle)
+    pwa/                 # PWA components (InstallBanner, UpdateToast)
+    settings/            # Settings page (SettingsPage, ProfileSection,
+                         #   AcknowledgementsSection, VersionSection)
+    skill-hub/           # Skill hub page (SkillHubPage)
+    tasks/               # Tasks page (TasksPage)
+    use-cases/           # Use cases page (UseCasesPage)
+  App.tsx                # Root app component with React Router setup
+  main.tsx               # Application entry point
 tests/
   setup.ts               # Global test setup (polyfills, mocks)
   helpers.ts             # Shared test helpers (mock OPFS, etc.)
+  mocks/                 # Virtual module mocks
+    virtual-pwa-register.ts  # Mock for vite-plugin-pwa virtual module
   **/*.test.{ts,tsx}     # Test files mirror src/ structure
+  integration/           # Integration tests
+    skill-hub-flow.test.tsx  # Skill hub end-to-end flow
+    use-cases-flow.test.ts   # Use cases end-to-end flow
 e2e/
   app.spec.ts            # App shell boot & navigation E2E tests
   chat.spec.ts           # Chat page E2E tests
   settings.spec.ts       # Settings page E2E tests
   pages.spec.ts          # Other pages (Files, Tasks, Use Cases, Skills) E2E tests
+  fetch-url.spec.ts      # Fetch URL functionality E2E tests
+  local-chat.spec.ts     # Local model chat E2E tests
 scripts/
   check-version-docs.sh  # CI script: enforces doc updates on minor/major bumps
+  sync-website-version.sh  # Syncs version from package.json to website HTML
+docs/
+  use-cases.md           # Use cases documentation
+  website/
+    index.html           # Static marketing/landing page
 ```
 
 ## Commands
@@ -49,6 +96,7 @@ scripts/
 ```bash
 npm run dev            # Start Vite dev server (localhost:5173)
 npm run build          # TypeScript check + production build
+npm run preview        # Preview production build locally
 npm run typecheck      # TypeScript type checking only
 npm run test           # Run full unit test suite (vitest run)
 npm run test:watch     # Run unit tests in watch mode
@@ -70,7 +118,8 @@ Every contribution must follow TDD. Write tests first, then implement. Both unit
 - **Assertions**: Vitest globals (`describe`, `it`, `expect`, `vi`) + `@testing-library/jest-dom` matchers
 - **IndexedDB**: `fake-indexeddb` (auto-polyfilled in `tests/setup.ts`)
 - **OPFS**: Custom in-memory mock (see `tests/helpers.ts`)
-- **Process isolation**: Tests run in forked processes (`pool: 'forks'`)
+- **Process isolation**: Tests run in forked processes (`pool: 'forks'`, 4 GB heap per fork)
+- **Module aliases**: `vitest.config.ts` maps `.js` imports to `.ts` source files for Web Worker & provider modules
 
 #### E2E Tests (Playwright)
 
@@ -78,6 +127,7 @@ Every contribution must follow TDD. Write tests first, then implement. Both unit
 - **Config**: `playwright.config.ts` (auto-starts Vite dev server)
 - **Test directory**: `e2e/` (flat structure, `*.spec.ts` files)
 - **CI reporter**: `github` format; locally uses `html` reporter
+- **Artifacts**: Playwright report uploaded as CI artifact (14-day retention)
 
 ### Coverage Requirements
 
@@ -92,11 +142,22 @@ statements: 90%
 
 These thresholds are enforced in `vitest.config.ts` — the coverage check will fail if any metric drops below 90%. Run `npm run test:coverage` to verify before submitting.
 
+**Files excluded from coverage** (configured in `vitest.config.ts`):
+
+- `src/main.tsx` — entry point
+- `src/vite-env.d.ts`, `src/**/*.d.ts` — type declarations
+- `src/types.ts`, `src/providers/types.ts` — type-only modules
+- `src/providers/index.ts` — re-export barrel
+- `src/vm.ts` — requires v86 runtime (WebVM)
+- `src/agent-worker.ts` — requires Worker thread context
+- `src/App.tsx` — root component with router setup
+
 ### Test File Conventions
 
 - Test files live in `tests/` and mirror the `src/` directory structure.
 - File naming: `tests/<path>/<module>.test.ts` (or `.test.tsx` for components).
 - Example: `src/crypto.ts` → `tests/crypto.test.ts`, `src/providers/router.ts` → `tests/providers/router.test.ts`.
+- Integration tests live in `tests/integration/` for cross-module flows.
 
 ### Writing Tests — Patterns from This Codebase
 
@@ -210,6 +271,7 @@ test('can change theme', async ({ page }) => {
 - Settings page interactions (theme, provider, API key inputs)
 - Chat page rendering (prompt starters, input)
 - Page rendering for all routes (Files, Tasks, Use Cases, Skills)
+- Fetch URL and local model chat flows
 
 ## Code Style
 
@@ -217,6 +279,19 @@ test('can change theme', async ({ page }) => {
 - ES modules (`import`/`export`), not CommonJS.
 - Functional style preferred; classes used for provider implementations.
 - Use existing patterns from the codebase — read neighboring files before writing new code.
+
+## CI Workflows
+
+Four GitHub Actions workflows run on PRs and pushes to `master`:
+
+| Workflow | File | Triggers | Purpose |
+|---|---|---|---|
+| **Tests** | `.github/workflows/test.yml` | push/PR to master | Unit tests with coverage, typecheck, and E2E tests |
+| **E2E Tests** | `.github/workflows/e2e.yml` | push/PR to master | Dedicated E2E run with Playwright report artifact |
+| **Release** | `.github/workflows/release.yml` | `v*.*.*` tags | Build, test, zip dist, create GitHub Release |
+| **Version Docs Check** | `.github/workflows/version-docs.yml` | PR to master | Enforces doc updates on minor/major bumps |
+
+All workflows use Node.js 20 on `ubuntu-latest`.
 
 ## Automated Releases (CI)
 
