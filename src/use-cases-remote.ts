@@ -11,6 +11,10 @@ import type { UseCase, Difficulty } from './types.js';
 export const REMOTE_README_URL =
   'https://raw.githubusercontent.com/hesamsheikh/awesome-openclaw-usecases/main/README.md';
 
+/** Base URL for individual use-case markdown files */
+export const REMOTE_USECASES_BASE_URL =
+  'https://raw.githubusercontent.com/hesamsheikh/awesome-openclaw-usecases/main/usecases/';
+
 /** IndexedDB config key for the cached remote use cases */
 export const CACHE_KEY = 'remote_use_cases_cache';
 
@@ -75,8 +79,13 @@ export function parseReadmeUseCases(markdown: string): UseCase[] {
       headerSkipped = true;
     }
 
-    const [category, title, description] = cells;
-    if (!title || !description) continue;
+    const [category, rawTitle, description] = cells;
+    if (!rawTitle || !description) continue;
+
+    // Extract link target and display text from markdown links: [Title](usecases/file.md)
+    const linkMatch = rawTitle.match(/^\[([^\]]+)\]\((?:usecases\/)?([^)]+)\)$/);
+    const title = linkMatch ? linkMatch[1] : rawTitle;
+    const sourceFile = linkMatch ? linkMatch[2] : undefined;
 
     const id = 'remote-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -87,6 +96,7 @@ export function parseReadmeUseCases(markdown: string): UseCase[] {
       category: category || 'Community',
       tags: ['community'],
       difficulty: 'intermediate' as Difficulty,
+      sourceFile,
     });
   }
 
@@ -144,5 +154,52 @@ export async function fetchRemoteUseCases(): Promise<UseCase[]> {
   } catch {
     // Network error — fall back to stale cache if available
     return cached?.useCases ?? [];
+  }
+}
+
+/** IndexedDB config key prefix for individual use-case detail cache */
+export const DETAIL_CACHE_PREFIX = 'usecase_detail_';
+
+interface DetailCacheEntry {
+  fetchedAt: number;
+  markdown: string;
+}
+
+/**
+ * Fetch the full markdown content for a single use case from the upstream repo.
+ * Caches in IndexedDB with 24h TTL. Returns null on failure.
+ */
+export async function fetchUseCaseDetail(sourceFile: string): Promise<string | null> {
+  const cacheKey = DETAIL_CACHE_PREFIX + sourceFile;
+  let cached: DetailCacheEntry | null = null;
+
+  try {
+    const raw = await getConfig(cacheKey);
+    if (raw) cached = JSON.parse(raw) as DetailCacheEntry;
+  } catch {
+    // corrupt cache — ignore
+  }
+
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+    return cached.markdown;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const res = await fetch(REMOTE_USECASES_BASE_URL + sourceFile, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (!res.ok) return cached?.markdown ?? null;
+
+    const markdown = await res.text();
+
+    const entry: DetailCacheEntry = { fetchedAt: Date.now(), markdown };
+    await setConfig(cacheKey, JSON.stringify(entry)).catch(() => {});
+
+    return markdown;
+  } catch {
+    return cached?.markdown ?? null;
   }
 }

@@ -2,7 +2,7 @@ name: Version Docs Check
 
 on:
   pull_request:
-    branches: [master]
+    branches: [dev]
 
 jobs:
   check-version-docs:
@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: 20
 
-      - run: bash scripts/check-version-docs.sh origin/master
+      - run: bash scripts/check-version-docs.sh origin/dev
