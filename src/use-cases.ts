@@ -40,6 +40,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Automation',
     tags: ['health', 'tracking', 'cron', 'scheduling', 'privacy'],
     difficulty: 'intermediate',
+    sourceFile: 'health-symptom-tracker.md',
   },
   {
     id: 'auto-habit-coach',
@@ -48,6 +49,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Automation',
     tags: ['habits', 'tracking', 'productivity', 'scheduling', 'cron'],
     difficulty: 'beginner',
+    sourceFile: 'habit-tracker-accountability-coach.md',
   },
 
   // --- Research ---
@@ -74,6 +76,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Research',
     tags: ['academic', 'papers', 'analysis', 'science'],
     difficulty: 'advanced',
+    sourceFile: 'arxiv-paper-reader.md',
   },
 
   {
@@ -83,6 +86,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Research',
     tags: ['finance', 'earnings', 'fetch', 'cron', 'analysis', 'scheduling'],
     difficulty: 'advanced',
+    sourceFile: 'earnings-tracker.md',
   },
   {
     id: 'research-market-product',
@@ -91,6 +95,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Research',
     tags: ['market', 'research', 'web', 'fetch', 'business', 'strategy'],
     difficulty: 'advanced',
+    sourceFile: 'market-research-product-factory.md',
   },
 
   // --- Content Creation ---
@@ -179,6 +184,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Productivity',
     tags: ['briefing', 'cron', 'scheduling', 'news', 'productivity'],
     difficulty: 'intermediate',
+    sourceFile: 'custom-morning-brief.md',
   },
   {
     id: 'prod-dynamic-dashboard',
@@ -187,6 +193,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Productivity',
     tags: ['dashboard', 'api', 'fetch', 'data', 'productivity'],
     difficulty: 'advanced',
+    sourceFile: 'dynamic-dashboard.md',
   },
   {
     id: 'prod-daily-news-digest',
@@ -195,6 +202,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Productivity',
     tags: ['news', 'summarization', 'cron', 'scheduling', 'reading', 'productivity'],
     difficulty: 'intermediate',
+    sourceFile: 'multi-source-tech-news-digest.md',
   },
   {
     id: 'prod-inbox-declutter',
@@ -203,6 +211,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Productivity',
     tags: ['email', 'summarization', 'productivity', 'organization'],
     difficulty: 'beginner',
+    sourceFile: 'inbox-declutter.md',
   },
   {
     id: 'prod-personal-crm',
@@ -211,6 +220,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Productivity',
     tags: ['contacts', 'organization', 'files', 'productivity', 'communication'],
     difficulty: 'intermediate',
+    sourceFile: 'personal-crm.md',
   },
   {
     id: 'prod-meeting-notes',
@@ -219,6 +229,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Productivity',
     tags: ['meetings', 'notes', 'tasks', 'scheduling', 'productivity'],
     difficulty: 'beginner',
+    sourceFile: 'meeting-notes-action-items.md',
   },
 
   // --- Creative ---
@@ -229,6 +240,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Creative',
     tags: ['content', 'video', 'blog', 'research', 'writing', 'productivity'],
     difficulty: 'intermediate',
+    sourceFile: 'youtube-content-pipeline.md',
   },
   {
     id: 'creative-podcast-production',
@@ -237,6 +249,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Creative',
     tags: ['podcast', 'audio', 'writing', 'research', 'content'],
     difficulty: 'advanced',
+    sourceFile: 'podcast-production-pipeline.md',
   },
 
   // --- Social ---
@@ -247,6 +260,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Social',
     tags: ['twitter', 'social-media', 'analysis', 'marketing'],
     difficulty: 'intermediate',
+    sourceFile: 'x-account-analysis.md',
   },
   {
     id: 'social-reddit-youtube-digest',
@@ -255,6 +269,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Social',
     tags: ['reddit', 'youtube', 'summarization', 'social-media', 'curation'],
     difficulty: 'beginner',
+    sourceFile: 'daily-reddit-digest.md',
   },
   {
     id: 'social-community-monitor',
@@ -273,6 +288,7 @@ export const USE_CASES: UseCase[] = [
     category: 'DevOps',
     tags: ['infrastructure', 'monitoring', 'bash', 'cron', 'automation', 'scripting'],
     difficulty: 'advanced',
+    sourceFile: 'self-healing-home-server.md',
   },
   {
     id: 'devops-log-analyzer',
@@ -291,6 +307,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Education',
     tags: ['research', 'validation', 'web', 'fetch', 'github', 'programming'],
     difficulty: 'intermediate',
+    sourceFile: 'pre-build-idea-validator.md',
   },
   {
     id: 'edu-knowledge-base',
@@ -299,6 +316,7 @@ export const USE_CASES: UseCase[] = [
     category: 'Education',
     tags: ['knowledge', 'notes', 'files', 'research', 'reading', 'organization'],
     difficulty: 'advanced',
+    sourceFile: 'knowledge-base-rag.md',
   },
 
   // --- Communication ---

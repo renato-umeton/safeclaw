@@ -154,6 +154,8 @@ export interface UseCase {
   category: string;
   tags: string[];
   difficulty: Difficulty;
+  /** Upstream markdown filename in awesome-openclaw-usecases repo (e.g. 'inbox-declutter.md') */
+  sourceFile?: string;
 }
 
 /** A use case with a relevance score */
