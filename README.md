@@ -162,18 +162,30 @@ npm run test:e2e:ui    # Run E2E tests with interactive Playwright UI
 
 ## Deploy
 
-The hosted app is available at [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com).
+The hosted app is available at [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com) (stable) and [dev-safeclaw.umeton.com](https://dev-safeclaw.umeton.com) (dev).
 
-### Automated Releases
+### Dual Release Channels
 
-Pushing a version tag triggers a GitHub Actions workflow that builds, tests, and publishes a release:
+SafeClaw publishes through two channels:
 
+| Channel | Branch | Tag | GitHub Release |
+|---------|--------|-----|----------------|
+| **Stable** | `master` | `v2.1.0` | Full release |
+| **Dev** | `dev` | `v2.1.0-dev.1` | Pre-release |
+
+**Stable release:**
 ```bash
 git tag v2.1.0
 git push origin v2.1.0
 ```
 
-The workflow runs the test suite, builds the project, and creates a GitHub Release with `safeclaw-<version>.zip` attached. Download the latest release from the [Releases page](https://github.com/renato-umeton/safeclaw/releases).
+**Dev release:**
+```bash
+git tag v2.1.0-dev.1
+git push origin v2.1.0-dev.1
+```
+
+Both channels run the full test suite, build, and publish a GitHub Release (dev tags are marked as pre-release). Download releases from the [Releases page](https://github.com/renato-umeton/safeclaw/releases).
 
 ### Self-Hosting
 

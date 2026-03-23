@@ -1,5 +1,7 @@
 export type BumpType = 'major' | 'minor' | 'patch' | 'none';
 
+export type ReleaseChannel = 'stable' | 'dev';
+
 export const REQUIRED_DOC_FILES = [
   'CLAUDE.md',
   'CONTRIBUTING.md',
@@ -8,7 +10,8 @@ export const REQUIRED_DOC_FILES = [
 ] as const;
 
 function parseVersion(version: string): [number, number, number] {
-  const parts = version.split('.');
+  const base = version.split('-')[0];
+  const parts = base.split('.');
   if (parts.length !== 3) {
     throw new Error(`Invalid semver version: "${version}"`);
   }
@@ -17,6 +20,14 @@ function parseVersion(version: string): [number, number, number] {
     throw new Error(`Invalid semver version: "${version}"`);
   }
   return nums;
+}
+
+export function detectReleaseChannel(version: string): ReleaseChannel {
+  return version.includes('-dev') ? 'dev' : 'stable';
+}
+
+export function isDevVersion(version: string): boolean {
+  return detectReleaseChannel(version) === 'dev';
 }
 
 export function detectBumpType(baseVersion: string, headVersion: string): BumpType {
@@ -32,8 +43,9 @@ export function detectBumpType(baseVersion: string, headVersion: string): BumpTy
 export function checkDocsUpdated(
   bumpType: BumpType,
   changedFiles: string[],
+  channel: ReleaseChannel = 'stable',
 ): { passed: boolean; missing: string[] } {
-  if (bumpType === 'patch' || bumpType === 'none') {
+  if (channel === 'dev' || bumpType === 'patch' || bumpType === 'none') {
     return { passed: true, missing: [] };
   }
 

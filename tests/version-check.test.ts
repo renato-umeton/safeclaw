@@ -1,4 +1,4 @@
-import { detectBumpType, checkDocsUpdated, REQUIRED_DOC_FILES } from '../src/version-check';
+import { detectBumpType, checkDocsUpdated, detectReleaseChannel, isDevVersion, REQUIRED_DOC_FILES } from '../src/version-check';
 
 describe('version-check', () => {
   describe('detectBumpType', () => {
@@ -56,6 +56,49 @@ describe('version-check', () => {
 
     it('throws on incomplete version string', () => {
       expect(() => detectBumpType('1.0', '1.0.0')).toThrow();
+    });
+
+    it('handles dev pre-release versions by comparing base semver', () => {
+      expect(detectBumpType('1.0.0', '1.1.0-dev.1')).toBe('minor');
+    });
+
+    it('handles comparing two dev versions', () => {
+      expect(detectBumpType('1.0.0-dev.1', '2.0.0-dev.1')).toBe('major');
+    });
+
+    it('returns "none" for same base version with different dev suffixes', () => {
+      expect(detectBumpType('1.0.0-dev.1', '1.0.0-dev.2')).toBe('none');
+    });
+
+    it('returns "patch" for dev to dev patch bump', () => {
+      expect(detectBumpType('1.0.0-dev.1', '1.0.1-dev.1')).toBe('patch');
+    });
+  });
+
+  describe('detectReleaseChannel', () => {
+    it('returns "stable" for standard semver versions', () => {
+      expect(detectReleaseChannel('1.0.0')).toBe('stable');
+      expect(detectReleaseChannel('2.1.3')).toBe('stable');
+    });
+
+    it('returns "dev" for versions with -dev suffix', () => {
+      expect(detectReleaseChannel('1.0.0-dev.1')).toBe('dev');
+      expect(detectReleaseChannel('2.1.0-dev.5')).toBe('dev');
+    });
+
+    it('returns "stable" for other pre-release suffixes', () => {
+      expect(detectReleaseChannel('1.0.0-beta.1')).toBe('stable');
+      expect(detectReleaseChannel('1.0.0-rc.1')).toBe('stable');
+    });
+  });
+
+  describe('isDevVersion', () => {
+    it('returns true for dev versions', () => {
+      expect(isDevVersion('1.0.0-dev.1')).toBe(true);
+    });
+
+    it('returns false for stable versions', () => {
+      expect(isDevVersion('1.0.0')).toBe(false);
     });
   });
 
@@ -136,6 +179,24 @@ describe('version-check', () => {
         'README.md',
         'docs/website/index.html',
       ]);
+    });
+
+    it('passes for dev channel even with minor bump and no doc files', () => {
+      const result = checkDocsUpdated('minor', ['src/foo.ts'], 'dev');
+      expect(result.passed).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('passes for dev channel even with major bump and no doc files', () => {
+      const result = checkDocsUpdated('major', [], 'dev');
+      expect(result.passed).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('still enforces docs for stable channel on minor bump', () => {
+      const result = checkDocsUpdated('minor', [], 'stable');
+      expect(result.passed).toBe(false);
+      expect(result.missing).toEqual(REQUIRED_DOC_FILES);
     });
   });
 });

@@ -795,7 +795,8 @@
   <!-- Footer -->
   <footer>
     <p><strong>SafeClaw</strong> — Browser-native personal AI assistant with multi-provider LLM support.</p>
-    <p id="footer-version" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">Latest release: v2.0.0 · March 2026</p>
+    <p id="footer-version" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">Latest stable release: v2.0.0 · March 2026</p>
+    <p id="footer-dev-version" style="margin-top: 0.25rem; font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;"></p>
     <p class="attribution">
       This project stands on the shoulders of giants:
       <a href="https://github.com/openclaw">OpenClaw</a> for the original open-source personal AI assistant,
@@ -828,29 +829,49 @@
   </footer>
 
   <script>
-    // Fetch latest release version from GitHub and update badges
+    // Fetch latest stable and dev releases from GitHub and update badges
     (function () {
-      var API_URL = 'https://api.github.com/repos/renato-umeton/safeclaw/releases/latest';
-      fetch(API_URL)
+      var RELEASES_URL = 'https://api.github.com/repos/renato-umeton/safeclaw/releases?per_page=20';
+      fetch(RELEASES_URL)
         .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-        .then(function (data) {
-          var tag = data.tag_name || '';
-          var version = tag.startsWith('v') ? tag : 'v' + tag;
-          var date = data.published_at ? new Date(data.published_at) : null;
+        .then(function (releases) {
+          var stable = null;
+          var dev = null;
+          for (var i = 0; i < releases.length; i++) {
+            var rel = releases[i];
+            if (!stable && !rel.prerelease && !rel.draft) stable = rel;
+            if (!dev && rel.prerelease && !rel.draft) dev = rel;
+            if (stable && dev) break;
+          }
 
-          var heroEl = document.getElementById('hero-version');
-          if (heroEl) heroEl.textContent = version;
+          if (stable) {
+            var tag = stable.tag_name || '';
+            var version = tag.startsWith('v') ? tag : 'v' + tag;
+            var date = stable.published_at ? new Date(stable.published_at) : null;
 
-          var navEl = document.getElementById('nav-version');
-          if (navEl) navEl.textContent = version;
+            var heroEl = document.getElementById('hero-version');
+            if (heroEl) heroEl.textContent = version;
 
-          var footerEl = document.getElementById('footer-version');
-          if (footerEl && date) {
-            var month = date.toLocaleString(undefined, { month: 'long' });
-            var year = date.getFullYear();
-            footerEl.textContent = 'Latest release: ' + version + ' \u00B7 ' + month + ' ' + year;
-          } else if (footerEl) {
-            footerEl.textContent = 'Latest release: ' + version;
+            var navEl = document.getElementById('nav-version');
+            if (navEl) navEl.textContent = version;
+
+            var footerEl = document.getElementById('footer-version');
+            if (footerEl && date) {
+              var month = date.toLocaleString(undefined, { month: 'long' });
+              var year = date.getFullYear();
+              footerEl.textContent = 'Latest stable release: ' + version + ' \u00B7 ' + month + ' ' + year;
+            } else if (footerEl) {
+              footerEl.textContent = 'Latest stable release: ' + version;
+            }
+          }
+
+          if (dev) {
+            var devTag = dev.tag_name || '';
+            var devVersion = devTag.startsWith('v') ? devTag : 'v' + devTag;
+            var devFooterEl = document.getElementById('footer-dev-version');
+            if (devFooterEl) {
+              devFooterEl.textContent = 'Latest dev release: ' + devVersion;
+            }
           }
         })
         .catch(function () { /* keep hardcoded fallback */ });
