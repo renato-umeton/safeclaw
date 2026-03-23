@@ -238,7 +238,7 @@ SafeClaw uses a GitHub Actions workflow to automate releases. You don't need to 
 **How it works:**
 
 1. Update the version in `package.json`
-2. Commit the change and push to `master`
+2. Commit the change and push to `dev`
 3. Create and push a version tag:
 
 ```bash

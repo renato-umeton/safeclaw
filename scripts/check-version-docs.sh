@@ -3,9 +3,9 @@ set -euo pipefail
 
 # Enforce documentation updates for minor/major version bumps.
 # Usage: bash scripts/check-version-docs.sh [base-ref]
-# Default base-ref: origin/master
+# Default base-ref: origin/dev
 
-BASE_REF="${1:-origin/master}"
+BASE_REF="${1:-origin/dev}"
 
 base_version=$(git show "$BASE_REF":package.json | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version")
 head_version=$(node -p "require('./package.json').version")

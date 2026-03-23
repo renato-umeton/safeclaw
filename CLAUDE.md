@@ -282,14 +282,14 @@ test('can change theme', async ({ page }) => {
 
 ## CI Workflows
 
-Four GitHub Actions workflows run on PRs and pushes to `master`:
+Four GitHub Actions workflows run on PRs and pushes to `dev`:
 
 | Workflow | File | Triggers | Purpose |
 |---|---|---|---|
-| **Tests** | `.github/workflows/test.yml` | push/PR to master | Unit tests with coverage, typecheck, and E2E tests |
-| **E2E Tests** | `.github/workflows/e2e.yml` | push/PR to master | Dedicated E2E run with Playwright report artifact |
+| **Tests** | `.github/workflows/test.yml` | push/PR to dev | Unit tests with coverage, typecheck, and E2E tests |
+| **E2E Tests** | `.github/workflows/e2e.yml` | push/PR to dev | Dedicated E2E run with Playwright report artifact |
 | **Release** | `.github/workflows/release.yml` | `v*.*.*` tags | Build, test, zip dist, create GitHub Release |
-| **Version Docs Check** | `.github/workflows/version-docs.yml` | PR to master | Enforces doc updates on minor/major bumps |
+| **Version Docs Check** | `.github/workflows/version-docs.yml` | PR to dev | Enforces doc updates on minor/major bumps |
 
 All workflows use Node.js 20 on `ubuntu-latest`.
 
@@ -330,12 +330,12 @@ Minor and major version bumps require updates to **all four** of these files to 
 
 Patch releases (bug fixes only) do not require documentation updates.
 
-This is enforced by the `Version Docs Check` GitHub Actions workflow (`.github/workflows/version-docs.yml`), which runs `scripts/check-version-docs.sh` on every PR to `master`. The check compares `package.json` version against `origin/master` and fails the PR if any required doc file is missing from the diff.
+This is enforced by the `Version Docs Check` GitHub Actions workflow (`.github/workflows/version-docs.yml`), which runs `scripts/check-version-docs.sh` on every PR to `dev`. The check compares `package.json` version against `origin/dev` and fails the PR if any required doc file is missing from the diff.
 
 You can run the check locally before pushing:
 
 ```bash
-bash scripts/check-version-docs.sh master
+bash scripts/check-version-docs.sh dev
 ```
 
 ## Library Acknowledgements (Mandatory)
