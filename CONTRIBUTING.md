@@ -233,31 +233,53 @@ Before submitting your PR, verify:
 
 ## Releases
 
-SafeClaw uses a GitHub Actions workflow to automate releases. You don't need to build and upload artifacts manually.
+SafeClaw has two release channels — **stable** and **dev** — both automated via GitHub Actions.
 
-**How it works:**
+### Branch Workflow
 
-1. Update the version in `package.json`
-2. Commit the change and push to `master`
-3. Create and push a version tag:
+- **`dev`** branch: Active development. Features and fixes land here first via PRs. Dev releases are tagged from this branch.
+- **`master`** branch: Stable releases. Receives merges from `dev` when ready. Stable releases are tagged from this branch.
+
+### Stable Release (from `master`)
+
+1. Merge `dev` into `master`
+2. Update the version in `package.json` (e.g., `2.1.0`)
+3. Commit, then tag and push:
 
 ```bash
 git tag v2.1.0
 git push origin v2.1.0
 ```
 
-The CI workflow will automatically:
+This creates a full GitHub Release with `safeclaw-2.1.0.zip` attached.
+
+### Dev Release (from `dev`)
+
+1. Update the version in `package.json` with a `-dev` suffix (e.g., `2.1.0-dev.1`)
+2. Commit, then tag and push:
+
+```bash
+git tag v2.1.0-dev.1
+git push origin v2.1.0-dev.1
+```
+
+This creates a **pre-release** on GitHub with `safeclaw-2.1.0-dev.1.zip` attached.
+
+### What the CI Does
+
+Both channels run the same pipeline:
 - Run the full test suite with coverage
+- Run E2E tests
 - Build the production bundle (`npm run build`)
 - Zip the `dist/` output
-- Create a GitHub Release with the zip attached
-
-The release asset is then downloadable at:
-```
-https://github.com/renato-umeton/safeclaw/releases/download/v2.1.0/safeclaw-2.1.0.zip
-```
+- Create a GitHub Release (pre-release for dev tags)
 
 **Do not commit build artifacts** (zips, dist folders) to the repository. Binary files belong in GitHub Releases.
+
+### Documentation Requirements
+
+- **Stable** minor/major bumps: All four doc files must be updated (`CLAUDE.md`, `CONTRIBUTING.md`, `README.md`, `docs/website/index.html`)
+- **Dev** releases and patch releases: No documentation updates required
 
 ## Example Workflows
 

@@ -218,44 +218,69 @@ test('can change theme', async ({ page }) => {
 - Functional style preferred; classes used for provider implementations.
 - Use existing patterns from the codebase — read neighboring files before writing new code.
 
-## Automated Releases (CI)
+## Dual Release Channels
 
-The `Release` GitHub Actions workflow (`.github/workflows/release.yml`) automates production builds. When a version tag matching `v*.*.*` is pushed, the workflow:
+SafeClaw has two release channels: **stable** (from `master`) and **dev** (from `dev`).
 
-1. Checks out the code
-2. Installs dependencies (`npm ci`)
-3. Runs tests with coverage (`npm run test:coverage`)
-4. Builds the project (`npm run build`)
-5. Zips the `dist/` directory into `safeclaw-<version>.zip`
-6. Creates a GitHub Release with the zip attached as a downloadable asset
+| Channel | Branch | Tag pattern | GitHub Release | Hosted at |
+|---------|--------|-------------|----------------|-----------|
+| **Stable** | `master` | `v2.1.0` | Full release | [app-safeclaw.umeton.com](https://app-safeclaw.umeton.com) |
+| **Dev** | `dev` | `v2.1.0-dev.1` | Pre-release | [dev-safeclaw.umeton.com](https://dev-safeclaw.umeton.com) |
 
-**To create a release:**
+### Automated Releases (CI)
+
+The `Release` GitHub Actions workflow (`.github/workflows/release.yml`) automates builds for both channels. It detects the channel from the tag:
+
+- **Stable tags** (`v*.*.*`): Creates a full GitHub Release
+- **Dev tags** (`v*.*.*-dev.*`): Creates a pre-release on GitHub
+
+Both channels run the same pipeline: checkout, `npm ci`, `npm run test:coverage`, E2E tests, `npm run build`, zip, and upload.
+
+**To create a stable release:**
 
 ```bash
-# Bump version in package.json, then:
+# On master — bump version in package.json, then:
 git tag v2.1.0
 git push origin v2.1.0
 ```
 
-The release artifact will be available at:
+**To create a dev release:**
+
+```bash
+# On dev — bump version in package.json with -dev suffix, then:
+git tag v2.1.0-dev.1
+git push origin v2.1.0-dev.1
 ```
+
+Release artifacts are available at:
+```
+# Stable
 https://github.com/renato-umeton/safeclaw/releases/download/v2.1.0/safeclaw-2.1.0.zip
+# Dev
+https://github.com/renato-umeton/safeclaw/releases/download/v2.1.0-dev.1/safeclaw-2.1.0-dev.1.zip
 ```
 
 **Important:** Do not commit build artifacts (zips, dist folders) to the repository. Binary assets belong in GitHub Releases, not in git history.
 
+### Branch Workflow
+
+- **`dev`** — Active development branch. Features and fixes land here first via PRs. Dev releases are tagged from this branch.
+- **`master`** — Stable branch. Receives merges from `dev` when ready for a stable release. Stable releases are tagged from this branch.
+
+CI (tests, E2E, typecheck) runs on both branches. The version docs check only runs on PRs to `master`.
+
 ## Release Documentation (Mandatory)
 
-Minor and major version bumps require updates to **all four** of these files to reflect the new code and functionalities being released:
+Minor and major **stable** version bumps require updates to **all four** of these files to reflect the new code and functionalities being released:
 
 - `CLAUDE.md`
 - `CONTRIBUTING.md`
 - `README.md`
 - `docs/website/index.html`
 
-Patch releases (bug fixes only) do not require documentation updates.
+Patch releases and **all dev channel releases** do not require documentation updates.
 
-This is enforced by the `Version Docs Check` GitHub Actions workflow (`.github/workflows/version-docs.yml`), which runs `scripts/check-version-docs.sh` on every PR to `master`. The check compares `package.json` version against `origin/master` and fails the PR if any required doc file is missing from the diff.
+This is enforced by the `Version Docs Check` GitHub Actions workflow (`.github/workflows/version-docs.yml`), which runs `scripts/check-version-docs.sh` on every PR to `master`. The check compares `package.json` version against `origin/master` and fails the PR if any required doc file is missing from the diff. Dev versions (containing `-dev`) automatically pass the check.
 
 You can run the check locally before pushing:
 

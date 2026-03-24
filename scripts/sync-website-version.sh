@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Sync the version from package.json into docs/website/index.html.
+# Handles both stable (v2.1.0) and dev (v2.1.0-dev.1) versions.
 # Usage: bash scripts/sync-website-version.sh
 
 WEBSITE="docs/website/index.html"
@@ -13,9 +14,9 @@ if [ ! -f "$WEBSITE" ]; then
 fi
 
 # Update hero badge: "· v<old>" → "· v<new>"
-sed -i "s/· v[0-9]\+\.[0-9]\+\.[0-9]\+/· v${VERSION}/g" "$WEBSITE"
+sed -i "s/· v[0-9]\+\.[0-9]\+\.[0-9]\+\(-dev\.[0-9]\+\)\?/· v${VERSION}/g" "$WEBSITE"
 
 # Update footer release line: "v<old> ·" → "v<new> ·"
-sed -i "s/release: v[0-9]\+\.[0-9]\+\.[0-9]\+/release: v${VERSION}/g" "$WEBSITE"
+sed -i "s/release: v[0-9]\+\.[0-9]\+\.[0-9]\+\(-dev\.[0-9]\+\)\?/release: v${VERSION}/g" "$WEBSITE"
 
 echo "Synced website version to v${VERSION}"

@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-dev.[0-9]+']
 
 permissions:
   contents: write
@@ -18,6 +18,20 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      - name: Detect release channel
+        id: channel
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == *"-dev."* ]]; then
+            echo "channel=dev" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "Detected dev release: $TAG"
+          else
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "Detected stable release: $TAG"
+          fi
 
       - name: Sync package.json version from tag
         run: |
@@ -55,12 +69,26 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          CHANNEL="${{ steps.channel.outputs.channel }}"
+          PRERELEASE="${{ steps.channel.outputs.prerelease }}"
+
+          TITLE="SafeClaw v${VERSION}"
+          if [ "$CHANNEL" = "dev" ]; then
+            TITLE="SafeClaw v${VERSION} (Dev)"
+          fi
+
+          PRERELEASE_FLAG=""
+          if [ "$PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
           # If the release already exists (created via UI), upload the asset to it.
           # Otherwise, create a new release.
           if gh release view "$GITHUB_REF_NAME" &>/dev/null; then
             gh release upload "$GITHUB_REF_NAME" "safeclaw-${VERSION}.zip" --clobber
           else
             gh release create "$GITHUB_REF_NAME" "safeclaw-${VERSION}.zip" \
-              --title "SafeClaw v${VERSION}" \
-              --generate-notes
+              --title "$TITLE" \
+              --generate-notes \
+              $PRERELEASE_FLAG
           fi

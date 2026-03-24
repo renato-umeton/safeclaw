@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Enforce documentation updates for minor/major version bumps.
+# Enforce documentation updates for minor/major version bumps on stable releases.
+# Dev channel releases (versions containing "-dev") skip this check.
 # Usage: bash scripts/check-version-docs.sh [base-ref]
 # Default base-ref: origin/master
 
@@ -10,8 +11,18 @@ BASE_REF="${1:-origin/master}"
 base_version=$(git show "$BASE_REF":package.json | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version")
 head_version=$(node -p "require('./package.json').version")
 
-IFS='.' read -r base_major base_minor _base_patch <<< "$base_version"
-IFS='.' read -r head_major head_minor _head_patch <<< "$head_version"
+# Skip doc enforcement for dev channel versions
+if [[ "$head_version" == *"-dev"* ]]; then
+  echo "Dev channel version detected ($head_version). Doc check skipped."
+  exit 0
+fi
+
+# Strip any pre-release suffix for comparison
+base_base="${base_version%%-*}"
+head_base="${head_version%%-*}"
+
+IFS='.' read -r base_major base_minor _base_patch <<< "$base_base"
+IFS='.' read -r head_major head_minor _head_patch <<< "$head_base"
 
 if [ "$head_major" -gt "$base_major" ]; then
   bump="major"
